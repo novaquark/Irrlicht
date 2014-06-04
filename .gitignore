@@ -1,3 +1,13 @@
 source/Irrlicht/obj
 lib
 bin
+
+# Visual Studio
+Binaries
+Intermediate
+*.suo
+*.sdf
+*.opensdf
+*.psess
+*.vsp
+*.vcxproj.user
