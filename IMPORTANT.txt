@@ -1,0 +1,9 @@
+Several things:
+
+ - no DirectX 9 on Windows 8, so either:
+	- disable directX in irrCompileConfig.h (or add NO_IRR_COMPILE_WITH_DIRECT3D_9_ to the preprocessor defines),
+	- or install the DirectX SDK (June 2010)
+
+ - debug libs and binaries of Irrlicht are not distinguished from the release one.
+	You must add '_d' to the target name of debug configurations (x86, x64).
+	Don't forget to change the name of the output *.lib and *.dll aswell (Linker/General->output, and Linker/Advanced->Libfile)
