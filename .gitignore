@@ -1,6 +1,6 @@
 source/Irrlicht/obj
-lib
-bin
+/lib
+/bin
 
 # Visual Studio
 Binaries
