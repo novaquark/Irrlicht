@@ -1,6 +1,16 @@
 --------------------------
 Changes in 1.9 (not yet released)
 
+- Added ability to set custom depth/stencil texture for render targets.
+- Added new color formats: ECF_R8, ECF_R8G8, ECF_D16, ECF_D32, ECF_D24S8.
+- Can now enable/disable backround drawing for IGUITable.
+- Bugfix: Cloning CBillboardSceneNode now copies colors and sizes.
+- EditBox works now with numpad on X11
+- Added helper functions for converting between wchar and utf-8. Patch provided by Hendu.
+- Added sphere frustum culling support. Patch provided by Hendu.
+- Fixed issues with setViewPort method under OpenGL. (reported by anontypist)
+- Fixed several selection, highlighting and clipping bugs in CGUITreeview (thx @ AReichl for the patch + test)
+- Removed DllMain from the static windows build (thx @ AReichl for reporting)
 - Fixed maximize/minimize under Linux by supporting NETWM hints. Patch provided by hendu.
 - ISceneNode::deserializeAttributes uses now old values for parameters which are not in the attributes (thx @entity for noticing).
 - Add interface for easier access to scrollbars for IGUIListBox, IGUITreeView and IGUITable
@@ -72,6 +82,13 @@ Changes in 1.9 (not yet released)
 --------------------------
 Changes in 1.8.2
 
+ - Fix bug with multiple SetPixelFormat calls. (reported and fixed by anontypist)
+ - Fix bug related to memory release in PNG image loader. Thanks elephoenix for it.
+ - Fix crash in CGUIListBox when users pressed end key folled by any other key in an empty, focused list box (thanks at porcus for report and patch).
+ - Fix use of enabling defines for wal2 (halflife) image loader. Thanks to hendu for noticing.
+ - Fix userClipPlane test by inserting the stabilizeScreenBackground call
+ - Demo enables antialiasing now correct (thanks to Mel for noticing).
+ - Update glext.h (bug #429)
  - Example 22 no longer select a random texture after loading a new texture (thanks at mongoose7 for reporting).
  - Fix bug in IGUISkin serialization which messed up serialization of the button-pressed offsets (thanks at Midnight for reporting).
  - IGUIStaticText::getTextHeight returns now the correct height for texts with newlines even WordWrap is not set.
