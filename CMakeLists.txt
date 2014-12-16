@@ -59,7 +59,7 @@ set(IRR_SRC_DIR "${IRR_ROOT_DIR}/source/Irrlicht")
 glob_c_cpp_sources(IRR_SRC_FILES ${IRR_SRC_DIR})
 glob_c_cpp_sources(IRR_SRC_FILES_AESGLADMAN ${IRR_SRC_DIR}/aesGladman)
 glob_c_cpp_sources(IRR_SRC_FILES_BZIP2 ${IRR_SRC_DIR}/bzip2)
-glob_c_cpp_sources(IRR_SRC_FILES_JPEGLIB ${IRR_SRC_DIR}/jpeglib)
+file(GLOB IRR_SRC_FILES_JPEGLIB "${IRR_SRC_DIR}/jpeglib/j*.c" "${IRR_SRC_DIR}/jpeglib/*.h")
 glob_c_cpp_sources(IRR_SRC_FILES_LIBPNG ${IRR_SRC_DIR}/libpng)
 glob_c_cpp_sources(IRR_SRC_FILES_LZMA ${IRR_SRC_DIR}/lzma)
 glob_c_cpp_sources(IRR_SRC_FILES_ZLIB ${IRR_SRC_DIR}/zlib)
@@ -74,11 +74,6 @@ list(REMOVE_ITEM IRR_SRC_FILES_BZIP2
 	"${IRR_SRC_DIR}/bzip2/spewG.c"
 	"${IRR_SRC_DIR}/bzip2/unzcrash.c")
 list(REMOVE_ITEM IRR_SRC_FILES_JPEGLIB
-	"${IRR_SRC_DIR}/jpeglib/cjpeg.c"
-	"${IRR_SRC_DIR}/jpeglib/djpeg.c"
-	"${IRR_SRC_DIR}/jpeglib/rdjpgcom.c"
-	"${IRR_SRC_DIR}/jpeglib/wrjpgcom.c"
-	"${IRR_SRC_DIR}/jpeglib/example.c"
 	"${IRR_SRC_DIR}/jpeglib/jmemdos.c"
 	"${IRR_SRC_DIR}/jpeglib/jmemmac.c"
 	"${IRR_SRC_DIR}/jpeglib/jmemname.c"
@@ -131,11 +126,13 @@ endif()
 
 # Per platform config
 # -------------------------------------------------------------------------------------------------
+
+# Export symbols
+target_compile_definitions(Irrlicht PRIVATE IRRLICHT_EXPORTS)
+
+# Other flags
 set(IRR_PLATFORM "Linux")
 if(WIN32)
-	# Export symbols if in dll
-	target_compile_definitions(Irrlicht PRIVATE IRRLICHT_EXPORTS)
-
 	# Multi processor compilation
 	target_compile_options(Irrlicht PRIVATE "/MP")
 
@@ -155,6 +152,26 @@ if(WIN32)
 	
 	# TEMP: no DirectX 9
 	target_compile_definitions(Irrlicht PRIVATE NO_IRR_COMPILE_WITH_DIRECT3D_9_)
+elseif(UNIX)
+	# Standard mode
+	target_compile_options(Irrlicht
+		PRIVATE "-Wall"
+		PRIVATE "-pipe"
+		PRIVATE "-fno-exceptions"
+		PRIVATE "-fno-strict-aliasing")
+
+	# Disable RTTI on C++ files only (no sense for C files)
+	set_source_files_properties(${IRR_SRC_FILES} ${IRR_SRC_FILES_AESGLADMAN}
+		PROPERTIES COMPILE_FLAGS "-fno-rtti")
+
+	# Debug macro
+	target_compile_options(Irrlicht PRIVATE $<$<CONFIG:Debug>:"-D_DEBUG">)
+
+	# X11 and OpenGL
+	target_link_libraries(Irrlicht
+		PRIVATE X11
+		PRIVATE GL
+		PRIVATE Xxf86vm)
 endif()
 
 # Last step, output directories
