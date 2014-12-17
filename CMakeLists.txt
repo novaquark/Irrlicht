@@ -125,7 +125,7 @@ target_include_directories(Irrlicht
 	PRIVATE ${IRR_SRC_DIR}/libpng
 	PRIVATE ${IRR_SRC_DIR}/lzma
 	PRIVATE ${IRR_SRC_DIR}/zlib)
-if(NOT ${BUILD_SHARED_LIBS})
+if(NOT ${IRRLICHT_SHARED})
 	target_compile_definitions(Irrlicht PUBLIC _IRR_STATIC_LIB_)
 endif()
 
