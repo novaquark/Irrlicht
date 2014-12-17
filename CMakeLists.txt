@@ -7,7 +7,7 @@ project(IrrlichtEngine)
 # Options
 # -------------------------------------------------------------------------------------------------
 set(IRR_FAST_MATH 0 CACHE BOOL "Whether to enable fast maths (at the expense of precision)")
-set(BUILD_SHARED_LIBS 1 CACHE BOOL "Whether to generate shared libraries instead of static libraries")
+set(IRRLICHT_SHARED 1 CACHE BOOL "Whether to generate shared libraries instead of static libraries")
 
 # Some helper functions
 # -------------------------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ source_group(Irrlicht\\libs\\zlib       FILES ${IRR_SRC_FILES_ZLIB})
 
 # Irrlicht target
 # -------------------------------------------------------------------------------------------------
-add_library(Irrlicht
+set(IRR_ALL_SRC_FILES
 	${IRR_SRC_FILES}
 	${IRR_SRC_FILES_AESGLADMAN}
 	${IRR_SRC_FILES_BZIP2}
@@ -108,6 +108,11 @@ add_library(Irrlicht
 	${IRR_SRC_FILES_LIBPNG}
 	${IRR_SRC_FILES_LZMA}
 	${IRR_SRC_FILES_ZLIB})
+if(${IRRLICHT_SHARED})
+	add_library(Irrlicht SHARED ${IRR_ALL_SRC_FILES})
+else()
+	add_library(Irrlicht STATIC ${IRR_ALL_SRC_FILES})
+endif()
 
 # Target properties (for compilation & export)
 # -------------------------------------------------------------------------------------------------
@@ -138,11 +143,14 @@ if(WIN32)
 
 	# Fast math options
 	if(${IRR_FAST_MATH})
-		target_compile_options(Irrlicht
-			PRIVATE "/fp:fast"
-			PRIVATE "/arch:SSE2")
+		target_compile_options(Irrlicht PRIVATE "/fp:fast")
+
+		# SSE2 is automatically activated on x64
+		if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+			target_compile_options(Irrlicht PRIVATE "/arch:SSE2")
+		endif()
 	endif()
-	
+
 	# Platform (note: mingw not supported here)
 	if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 		set(IRR_PLATFORM "Win64-VisualStudio")
