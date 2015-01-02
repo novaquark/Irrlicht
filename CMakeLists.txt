@@ -117,7 +117,7 @@ endif()
 # Target properties (for compilation & export)
 # -------------------------------------------------------------------------------------------------
 target_include_directories(Irrlicht
-	PUBLIC ${IRR_ROOT_DIR}/include
+	SYSTEM PUBLIC ${IRR_ROOT_DIR}/include
 	PRIVATE ${IRR_SRC_DIR}
 	PRIVATE ${IRR_SRC_DIR}/aesGladman
 	PRIVATE ${IRR_SRC_DIR}/bzip2
