@@ -173,7 +173,7 @@ elseif(UNIX)
 		PROPERTIES COMPILE_FLAGS "-fno-rtti")
 
 	# Debug macro
-	target_compile_options(Irrlicht PRIVATE $<$<CONFIG:Debug>:"-D_DEBUG">)
+	target_compile_options(Irrlicht PRIVATE $<$<CONFIG:Debug>:-D_DEBUG>)
 
 	# X11 and OpenGL
 	target_link_libraries(Irrlicht
