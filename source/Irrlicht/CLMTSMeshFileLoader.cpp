@@ -70,9 +70,8 @@ Version 1.0 - 29 July 2004
 
 #include "CLMTSMeshFileLoader.h"
 #include "CMeshTextureLoader.h"
-#include "SMeshBufferLightMap.h"
 #include "SAnimatedMesh.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "irrString.h"
 #include "IReadFile.h"
 #include "IAttributes.h"
@@ -270,42 +269,46 @@ void CLMTSMeshFileLoader::constructMesh(SMesh* mesh)
 {
 	for (s32 i=0; i<Header.SubsetCount; ++i)
 	{
-		scene::SMeshBufferLightMap* meshBuffer = new scene::SMeshBufferLightMap();
+		CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer = new CMeshBuffer<video::S3DVertex2TCoords>(Driver->getVertexDescriptor(1));
 
 		// EMT_LIGHTMAP_M2/EMT_LIGHTMAP_M4 also possible
-		meshBuffer->Material.MaterialType = video::EMT_LIGHTMAP;
-		meshBuffer->Material.Wireframe = false;
-		meshBuffer->Material.Lighting = false;
+		meshBuffer->getMaterial().MaterialType = video::EMT_LIGHTMAP;
+		meshBuffer->getMaterial().Wireframe = false;
+		meshBuffer->getMaterial().Lighting = false;
 
 		mesh->addMeshBuffer(meshBuffer);
 
 		const u32 offs = Subsets[i].Offset * 3;
 
+		video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)meshBuffer->getVertexBuffer()->getVertices();
+
 		for (u32 sc=0; sc<Subsets[i].Count; sc++)
 		{
-			const u32 idx = meshBuffer->getVertexCount();
+			const u32 idx = meshBuffer->getVertexBuffer()->getVertexCount();
 
 			for (u32 vu=0; vu<3; ++vu)
 			{
 				const SLMTSTriangleDataEntry& v = Triangles[offs+(3*sc)+vu];
-				meshBuffer->Vertices.push_back(
-						video::S3DVertex2TCoords(
+
+				video::S3DVertex2TCoords vtx(
 							v.X, v.Y, v.Z,
 							video::SColor(255,255,255,255),
-							v.U1, v.V1, v.U2, v.V2));
+							v.U1, v.V1, v.U2, v.V2);
+
+				meshBuffer->getVertexBuffer()->addVertex(&vtx);
 			}
 			const core::vector3df normal = core::plane3df(
-				meshBuffer->Vertices[idx].Pos,
-				meshBuffer->Vertices[idx+1].Pos,
-				meshBuffer->Vertices[idx+2].Pos).Normal;
+				Vertices[idx].Pos,
+				Vertices[idx+1].Pos,
+				Vertices[idx+2].Pos).Normal;
 
-			meshBuffer->Vertices[idx].Normal = normal;
-			meshBuffer->Vertices[idx+1].Normal = normal;
-			meshBuffer->Vertices[idx+2].Normal = normal;
+			Vertices[idx].Normal = normal;
+			Vertices[idx+1].Normal = normal;
+			Vertices[idx+2].Normal = normal;
 
-			meshBuffer->Indices.push_back(idx);
-			meshBuffer->Indices.push_back(idx+1);
-			meshBuffer->Indices.push_back(idx+2);
+			meshBuffer->getIndexBuffer()->addIndex(idx);
+			meshBuffer->getIndexBuffer()->addIndex(idx+1);
+			meshBuffer->getIndexBuffer()->addIndex(idx+2);
 		}
 		meshBuffer->drop();
 	}

@@ -23,26 +23,35 @@ CSkyBoxSceneNode::CSkyBoxSceneNode(video::ITexture* top, video::ITexture* bottom
 	setDebugName("CSkyBoxSceneNode");
 	#endif
 
+	for (u32 i = 0; i < 6; ++i)
+		MeshBuffer[i] = new CMeshBuffer<video::S3DVertex>(mgr->getVideoDriver()->getVertexDescriptor(0), video::EIT_16BIT);
+
 	setAutomaticCulling(scene::EAC_OFF);
-	Box.MaxEdge.set(0,0,0);
-	Box.MinEdge.set(0,0,0);
-
-	// create indices
-
-	Indices[0] = 0;
-	Indices[1] = 1;
-	Indices[2] = 2;
-	Indices[3] = 3;
-
-	// create material
 
 	video::SMaterial mat;
 	mat.Lighting = false;
 	mat.ZBuffer = video::ECFN_DISABLED;
 	mat.ZWriteEnable = false;
-	mat.AntiAliasing=0;
+	mat.AntiAliasing = 0;
 	mat.TextureLayer[0].TextureWrapU = video::ETC_CLAMP_TO_EDGE;
 	mat.TextureLayer[0].TextureWrapV = video::ETC_CLAMP_TO_EDGE;
+
+	for (u32 i = 0; i < 6; ++i)
+	{
+		MeshBuffer[i]->getBoundingBox().MaxEdge.set(0, 0, 0);
+		MeshBuffer[i]->getBoundingBox().MinEdge.set(0, 0, 0);
+
+		IIndexBuffer* IndexBuffer = MeshBuffer[i]->getIndexBuffer();
+
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(2);
+		IndexBuffer->addIndex(0);
+		IndexBuffer->addIndex(1);
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(0);
+
+		MeshBuffer[i]->getMaterial() = mat;
+	}
 
 	/* Hey, I am no artist, but look at that
 	   cool ASCII art I made! ;)
@@ -73,57 +82,119 @@ CSkyBoxSceneNode::CSkyBoxSceneNode(video::ITexture* top, video::ITexture* bottom
 
 	// create front side
 
-	Material[0] = mat;
-	Material[0].setTexture(0, front);
-	Vertices[0] = video::S3DVertex(-1,-1,-1, 0,0,1, video::SColor(255,255,255,255), t, t);
-	Vertices[1] = video::S3DVertex( 1,-1,-1, 0,0,1, video::SColor(255,255,255,255), o, t);
-	Vertices[2] = video::S3DVertex( 1, 1,-1, 0,0,1, video::SColor(255,255,255,255), o, o);
-	Vertices[3] = video::S3DVertex(-1, 1,-1, 0,0,1, video::SColor(255,255,255,255), t, o);
+	MeshBuffer[0]->getMaterial().setTexture(0, front);
+
+	IVertexBuffer* VertexBuffer = MeshBuffer[0]->getVertexBuffer(0);
+
+	video::S3DVertex Vertex = video::S3DVertex(-1,-1,-1, 0,0,1, video::SColor(255,255,255,255), t, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex( 1,-1,-1, 0,0,1, video::SColor(255,255,255,255), o, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1, 1,-1, 0,0,1, video::SColor(255,255,255,255), t, o);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex( 1, 1,-1, 0,0,1, video::SColor(255,255,255,255), o, o);
+	VertexBuffer->addVertex(&Vertex);
 
 	// create left side
 
-	Material[1] = mat;
-	Material[1].setTexture(0, left);
-	Vertices[4] = video::S3DVertex( 1,-1,-1, -1,0,0, video::SColor(255,255,255,255), t, t);
-	Vertices[5] = video::S3DVertex( 1,-1, 1, -1,0,0, video::SColor(255,255,255,255), o, t);
-	Vertices[6] = video::S3DVertex( 1, 1, 1, -1,0,0, video::SColor(255,255,255,255), o, o);
-	Vertices[7] = video::S3DVertex( 1, 1,-1, -1,0,0, video::SColor(255,255,255,255), t, o);
+	MeshBuffer[1]->getMaterial().setTexture(0, left);
+
+	VertexBuffer = MeshBuffer[1]->getVertexBuffer(0);
+
+	Vertex = video::S3DVertex( 1,-1,-1, -1,0,0, video::SColor(255,255,255,255), t, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex( 1,-1, 1, -1,0,0, video::SColor(255,255,255,255), o, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex( 1, 1,-1, -1,0,0, video::SColor(255,255,255,255), t, o);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex( 1, 1, 1, -1,0,0, video::SColor(255,255,255,255), o, o);
+	VertexBuffer->addVertex(&Vertex);
 
 	// create back side
 
-	Material[2] = mat;
-	Material[2].setTexture(0, back);
-	Vertices[8]  = video::S3DVertex( 1,-1, 1, 0,0,-1, video::SColor(255,255,255,255), t, t);
-	Vertices[9]  = video::S3DVertex(-1,-1, 1, 0,0,-1, video::SColor(255,255,255,255), o, t);
-	Vertices[10] = video::S3DVertex(-1, 1, 1, 0,0,-1, video::SColor(255,255,255,255), o, o);
-	Vertices[11] = video::S3DVertex( 1, 1, 1, 0,0,-1, video::SColor(255,255,255,255), t, o);
+	MeshBuffer[2]->getMaterial().setTexture(0, back);
+
+	VertexBuffer = MeshBuffer[2]->getVertexBuffer(0);
+
+	Vertex = video::S3DVertex( 1,-1, 1, 0,0,-1, video::SColor(255,255,255,255), t, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1,-1, 1, 0,0,-1, video::SColor(255,255,255,255), o, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex( 1, 1, 1, 0,0,-1, video::SColor(255,255,255,255), t, o);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1, 1, 1, 0,0,-1, video::SColor(255,255,255,255), o, o);
+    VertexBuffer->addVertex(&Vertex);
 
 	// create right side
 
-	Material[3] = mat;
-	Material[3].setTexture(0, right);
-	Vertices[12] = video::S3DVertex(-1,-1, 1, 1,0,0, video::SColor(255,255,255,255), t, t);
-	Vertices[13] = video::S3DVertex(-1,-1,-1, 1,0,0, video::SColor(255,255,255,255), o, t);
-	Vertices[14] = video::S3DVertex(-1, 1,-1, 1,0,0, video::SColor(255,255,255,255), o, o);
-	Vertices[15] = video::S3DVertex(-1, 1, 1, 1,0,0, video::SColor(255,255,255,255), t, o);
+	MeshBuffer[3]->getMaterial().setTexture(0, right);
+
+	VertexBuffer = MeshBuffer[3]->getVertexBuffer(0);
+
+	Vertex = video::S3DVertex(-1,-1, 1, 1,0,0, video::SColor(255,255,255,255), t, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1,-1,-1, 1,0,0, video::SColor(255,255,255,255), o, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1, 1, 1, 1,0,0, video::SColor(255,255,255,255), t, o);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1, 1,-1, 1,0,0, video::SColor(255,255,255,255), o, o);
+    VertexBuffer->addVertex(&Vertex);
 
 	// create top side
 
-	Material[4] = mat;
-	Material[4].setTexture(0, top);
-	Vertices[16] = video::S3DVertex( 1, 1,-1, 0,-1,0, video::SColor(255,255,255,255), t, t);
-	Vertices[17] = video::S3DVertex( 1, 1, 1, 0,-1,0, video::SColor(255,255,255,255), o, t);
-	Vertices[18] = video::S3DVertex(-1, 1, 1, 0,-1,0, video::SColor(255,255,255,255), o, o);
-	Vertices[19] = video::S3DVertex(-1, 1,-1, 0,-1,0, video::SColor(255,255,255,255), t, o);
+	MeshBuffer[4]->getMaterial().setTexture(0, top);
+
+	VertexBuffer = MeshBuffer[4]->getVertexBuffer(0);
+
+	Vertex = video::S3DVertex( 1, 1,-1, 0,-1,0, video::SColor(255,255,255,255), t, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex( 1, 1, 1, 0,-1,0, video::SColor(255,255,255,255), o, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1, 1,-1, 0,-1,0, video::SColor(255,255,255,255), t, o);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1, 1, 1, 0,-1,0, video::SColor(255,255,255,255), o, o);
+    VertexBuffer->addVertex(&Vertex);
 
 	// create bottom side
 
-	Material[5] = mat;
-	Material[5].setTexture(0, bottom);
-	Vertices[20] = video::S3DVertex( 1,-1, 1, 0,1,0, video::SColor(255,255,255,255), o, o);
-	Vertices[21] = video::S3DVertex( 1,-1,-1, 0,1,0, video::SColor(255,255,255,255), t, o);
-	Vertices[22] = video::S3DVertex(-1,-1,-1, 0,1,0, video::SColor(255,255,255,255), t, t);
-	Vertices[23] = video::S3DVertex(-1,-1, 1, 0,1,0, video::SColor(255,255,255,255), o, t);
+	MeshBuffer[5]->getMaterial().setTexture(0, bottom);
+
+	VertexBuffer = MeshBuffer[5]->getVertexBuffer(0);
+
+	Vertex = video::S3DVertex( 1,-1, 1, 0,1,0, video::SColor(255,255,255,255), o, o);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex( 1,-1,-1, 0,1,0, video::SColor(255,255,255,255), t, o);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1,-1, 1, 0,1,0, video::SColor(255,255,255,255), o, t);
+	VertexBuffer->addVertex(&Vertex);
+
+	Vertex = video::S3DVertex(-1,-1,-1, 0,1,0, video::SColor(255,255,255,255), t, t);
+	VertexBuffer->addVertex(&Vertex);
+}
+
+
+//! destructor
+CSkyBoxSceneNode::~CSkyBoxSceneNode()
+{
+    for (u32 i = 0; i < 6; ++i)
+		MeshBuffer[i]->drop();
 }
 
 
@@ -152,8 +223,8 @@ void CSkyBoxSceneNode::render()
 
 		for (s32 i=0; i<6; ++i)
 		{
-			driver->setMaterial(Material[i]);
-			driver->drawIndexedTriangleFan(&Vertices[i*4], 4, Indices, 2);
+			driver->setMaterial(MeshBuffer[i]->getMaterial());
+			driver->drawMeshBuffer(MeshBuffer[i]);
 		}
 	}
 	else
@@ -188,7 +259,7 @@ void CSkyBoxSceneNode::render()
 			idx = lookVect.Z > 0 ? 1 : 3;
 		}
 
-		video::ITexture* tex = Material[idx].getTexture(0);
+		video::ITexture* tex = MeshBuffer[idx]->getMaterial().getTexture(0);
 
 		if ( tex )
 		{
@@ -207,7 +278,7 @@ void CSkyBoxSceneNode::render()
 //! returns the axis aligned bounding box of this node
 const core::aabbox3d<f32>& CSkyBoxSceneNode::getBoundingBox() const
 {
-	return Box;
+	return MeshBuffer[0]->getBoundingBox();
 }
 
 
@@ -227,7 +298,7 @@ void CSkyBoxSceneNode::OnRegisterSceneNode()
 //! to directly modify the material of a scene node.
 video::SMaterial& CSkyBoxSceneNode::getMaterial(u32 i)
 {
-	return Material[i];
+	return MeshBuffer[i]->getMaterial();
 }
 
 
@@ -249,8 +320,11 @@ ISceneNode* CSkyBoxSceneNode::clone(ISceneNode* newParent, ISceneManager* newMan
 
 	nb->cloneMembers(this, newManager);
 
-	for (u32 i=0; i<6; ++i)
-		nb->Material[i] = Material[i];
+	for (u32 i = 0; i < 6; ++i)
+	{
+		nb->MeshBuffer[i]->getMaterial() = MeshBuffer[i]->getMaterial();
+		nb->MeshBuffer[i]->getBoundingBox() = MeshBuffer[i]->getBoundingBox();
+	}
 
 	if ( newParent )
 		nb->drop();

@@ -31,6 +31,7 @@ namespace irr
 {
 namespace video
 {
+	class CD3D9Driver;
 	class CD3D9CallBridge;
 
 	struct SDepthSurface : public IReferenceCounted
@@ -51,12 +52,63 @@ namespace video
 		core::dimension2du Size;
 	};
 
-	class CD3D9Driver : public CNullDriver, IMaterialRendererServices
+	class CD3D9VertexDescriptor : public CVertexDescriptor
 	{
 	public:
+		CD3D9VertexDescriptor(IDirect3DDevice9* device, const core::stringc& name, u32 id);
+		virtual ~CD3D9VertexDescriptor();
 
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID);
+
+		virtual bool removeAttribute(u32 id);
+
+		virtual void removeAllAttribute();
+
+		IDirect3DVertexDeclaration9* getInputLayoutDescription();
+
+		void rebuild();
+
+		void clear();
+
+	protected:
+		IDirect3DVertexDeclaration9* VertexDeclaration;
+
+		IDirect3DDevice9* Device;
+	};
+
+	// D3D9 uses different types for hardware buffers, but we try to unify it like in other drivers.
+	class CD3D9HardwareBuffer : public IHardwareBuffer
+	{
+	public:
+		CD3D9HardwareBuffer(scene::IIndexBuffer* indexBuffer, CD3D9Driver* driver);
+		CD3D9HardwareBuffer(scene::IVertexBuffer* vertexBuffer, CD3D9Driver* driver);
+		~CD3D9HardwareBuffer();
+
+		bool update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data);
+
+		inline IDirect3DIndexBuffer9* getIndexBuffer() const;
+		inline IDirect3DVertexBuffer9* getVertexBuffer() const;
+		inline void removeFromArray(bool status);
+
+	private:
+		bool updateIndexBuffer(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data);
+		bool updateVertexBuffer(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data);
+
+		CD3D9Driver* Driver;
+
+		IDirect3DIndexBuffer9* IndexBuffer;
+		IDirect3DVertexBuffer9* VertexBuffer;
+		bool RemoveFromArray;
+
+		void* LinkedBuffer;
+	};
+
+	class CD3D9Driver : public CNullDriver, IMaterialRendererServices
+	{
+		friend class CD3D9HardwareBuffer;
 		friend class CD3D9CallBridge;
 		friend class CD3D9Texture;
+	public:
 
 		//! constructor
 		CD3D9Driver(const SIrrlichtCreationParameters& params, io::IFileSystem* io);
@@ -96,34 +148,11 @@ namespace video
 		//! gets the area of the current viewport
 		virtual const core::rect<s32>& getViewPort() const _IRR_OVERRIDE_;
 
-		struct SHWBufferLink_d3d9 : public SHWBufferLink
-		{
-			SHWBufferLink_d3d9(const scene::IMeshBuffer *_MeshBuffer):
-				SHWBufferLink(_MeshBuffer),
-					vertexBuffer(0), indexBuffer(0),
-					vertexBufferSize(0), indexBufferSize(0) {}
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer) _IRR_OVERRIDE_;
 
-			IDirect3DVertexBuffer9* vertexBuffer;
-			IDirect3DIndexBuffer9* indexBuffer;
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer) _IRR_OVERRIDE_;
 
-			u32 vertexBufferSize;
-			u32 indexBufferSize;
-		};
-
-		bool updateVertexHardwareBuffer(SHWBufferLink_d3d9 *HWBuffer);
-		bool updateIndexHardwareBuffer(SHWBufferLink_d3d9 *HWBuffer);
-
-		//! updates hardware buffer if needed
-		virtual bool updateHardwareBuffer(SHWBufferLink *HWBuffer) _IRR_OVERRIDE_;
-
-		//! Create hardware buffer from mesh
-		virtual SHWBufferLink *createHardwareBuffer(const scene::IMeshBuffer* mb) _IRR_OVERRIDE_;
-
-		//! Delete hardware buffer (only some drivers can)
-		virtual void deleteHardwareBuffer(SHWBufferLink *HWBuffer) _IRR_OVERRIDE_;
-
-		//! Draw hardware buffer
-		virtual void drawHardwareBuffer(SHWBufferLink *HWBuffer) _IRR_OVERRIDE_;
+		void removeAllHardwareBuffers();
 
 		//! Create occlusion query.
 		/** Use node for identification and mesh for occlusion test. */
@@ -149,11 +178,7 @@ namespace video
 		actual value of pixels. */
 		virtual u32 getOcclusionQueryResult(scene::ISceneNode* node) const _IRR_OVERRIDE_;
 
-		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
-				E_INDEX_TYPE iType) _IRR_OVERRIDE_;
+		virtual void drawMeshBuffer(const scene::IMeshBuffer* mb) _IRR_OVERRIDE_;
 
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -333,6 +358,8 @@ namespace video
 		//! Get Irrlicht color format from D3D color format.
 		ECOLOR_FORMAT getColorFormatFromD3DFormat(D3DFORMAT format) const;
 
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName) _IRR_OVERRIDE_;
+
 		//! Get D3D blending factor.
 		u32 getD3DBlend(E_BLEND_FACTOR factor) const;
 
@@ -360,8 +387,8 @@ namespace video
 			ERM_SHADOW_VOLUME_ZPASS // stencil volume draw mode
 		};
 
-		//! sets right vertex shader
-		void setVertexShader(video::E_VERTEX_TYPE newType);
+		//! sets right vertex descriptor
+		void setVertexDescriptor(IVertexDescriptor* vertexDescriptor);
 
 		//! sets the needed renderstates
 		bool setRenderStates3DMode();
@@ -419,10 +446,9 @@ namespace video
 
 		void createMaterialRenderers();
 
-		void draw2D3DVertexPrimitiveList(const void* vertices,
-				u32 vertexCount, const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
-				E_INDEX_TYPE iType, bool is3D);
+		void draw2D3DVertexPrimitiveList(const void* pVertices, u32 pVertexCount, u32 pVertexSize, const void* pIndices, D3DFORMAT pIndexType, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType, bool is3D);
+
+		void renderArray(const void* vertices, u32 vertexSize, u32 vertexCount, const void* indices, D3DFORMAT indexType, u32 primitiveCount, scene::E_PRIMITIVE_TYPE primitiveType);
 
 		D3DTEXTUREADDRESS getTextureWrapMode(const u8 clamp);
 
@@ -463,7 +489,7 @@ namespace video
 
 		SIrrlichtCreationParameters Params;
 
-		E_VERTEX_TYPE LastVertexType;
+		IVertexDescriptor* LastVertexDescriptor;
 
 		SColorf AmbientLight;
 
@@ -492,6 +518,10 @@ namespace video
 		bool DriverWasReset;
 		bool OcclusionQuerySupport;
 		bool AlphaToCoverageSupport;
+
+		IDirect3DVertexDeclaration9* ShadowVertexDeclaration;
+
+		core::array<CD3D9HardwareBuffer*> HardwareBuffer;
 
 		#ifdef _IRR_COMPILE_WITH_CG_
 		CGcontext CgContext;

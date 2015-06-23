@@ -8,8 +8,7 @@
 #include "IMeshSceneNode.h"
 #include "IQ3Shader.h"
 #include "IFileSystem.h"
-#include "SMeshBuffer.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 #include "SMesh.h"
 #include "ISceneManager.h"
 
@@ -61,8 +60,8 @@ private:
 	const quake3::IShader* Shader;
 	SMesh *Mesh;
 	IShadowVolumeSceneNode* Shadow;
-	const SMeshBufferLightMap* Original;
-	SMeshBuffer* MeshBuffer;
+	const CMeshBuffer<video::S3DVertex2TCoords>* Original;
+	CMeshBuffer<video::S3DVertex>* MeshBuffer;
 	core::vector3df MeshOffset;
 
 	struct SQ3Texture
@@ -85,8 +84,8 @@ private:
 	core::array< SQ3Texture > Q3Texture;
 
 	void loadTextures ( io::IFileSystem * fileSystem );
-	void addBuffer ( scene::SMeshBufferLightMap * buffer );
-	void cloneBuffer ( scene::SMeshBuffer *dest, const scene::SMeshBufferLightMap * buffer, bool translateCenter );
+	void addBuffer ( CMeshBuffer<video::S3DVertex2TCoords>* buffer );
+	void cloneBuffer ( CMeshBuffer<video::S3DVertex> *dest, const CMeshBuffer<video::S3DVertex2TCoords>* buffer, bool translateCenter );
 
 	void deformvertexes_wave ( f32 dt, quake3::SModifierFunction &function );
 	void deformvertexes_move ( f32 dt, quake3::SModifierFunction &function );

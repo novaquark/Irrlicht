@@ -18,8 +18,8 @@ namespace scene
 	public:
 
 		//! constructor
-		COctreeSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 id,
-			s32 minimalPolysPerNode=512);
+		COctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshes, ISceneNode* parent, ISceneManager* mgr,
+			s32 id, s32 minimalPolysPerNode=512);
 
 		//! destructor
 		virtual ~COctreeSceneNode();
@@ -82,17 +82,11 @@ namespace scene
 
 		core::aabbox3d<f32> Box;
 
-		Octree<video::S3DVertex>* StdOctree;
-		core::array< Octree<video::S3DVertex>::SMeshChunk > StdMeshes;
+		Octree* StdOctree;
+		core::array<IMeshBuffer*> StdMeshes;
+		core::array<s32> StdMeshesMatID;
 
-		Octree<video::S3DVertex2TCoords>* LightMapOctree;
-		core::array< Octree<video::S3DVertex2TCoords>::SMeshChunk > LightMapMeshes;
-
-		Octree<video::S3DVertexTangents>* TangentsOctree;
-		core::array< Octree<video::S3DVertexTangents>::SMeshChunk > TangentsMeshes;
-
-		video::E_VERTEX_TYPE VertexType;
-		core::array< video::SMaterial > Materials;
+		core::array<video::SMaterial> Materials;
 
 		core::stringc MeshName;
 		s32 MinimalPolysPerNode;

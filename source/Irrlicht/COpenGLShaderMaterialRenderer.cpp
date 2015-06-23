@@ -111,6 +111,9 @@ COpenGLShaderMaterialRenderer::COpenGLShaderMaterialRenderer(COpenGLDriver* driv
 //! Destructor
 COpenGLShaderMaterialRenderer::~COpenGLShaderMaterialRenderer()
 {
+	if(Driver->getActiveARBProgram() == VertexShader)
+		Driver->setActiveARBProgram(0);
+
 	if (CallBack)
 		CallBack->drop();
 
@@ -243,11 +246,15 @@ void COpenGLShaderMaterialRenderer::OnSetMaterial(const video::SMaterial& materi
 
 	if (CallBack)
 		CallBack->OnSetMaterial(material);
+
+	Driver->setActiveARBProgram(VertexShader);
 }
 
 
 void COpenGLShaderMaterialRenderer::OnUnsetMaterial()
 {
+	Driver->setActiveARBProgram(0);
+
 	// disable vertex shader
 #ifdef GL_ARB_vertex_program
 	if (VertexShader)

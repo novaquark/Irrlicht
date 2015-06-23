@@ -7,7 +7,7 @@
 #define __C_SKY_DOME_SCENE_NODE_H_INCLUDED__
 
 #include "ISceneNode.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -36,7 +36,7 @@ class CSkyDomeSceneNode : public ISceneNode
 
 		void generateMesh();
 
-		SMeshBuffer* Buffer;
+		CMeshBuffer<video::S3DVertex>* Buffer;
 
 		u32 HorizontalResolution, VerticalResolution;
 		f32 TexturePercentage, SpherePercentage, Radius;

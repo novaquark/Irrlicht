@@ -25,6 +25,7 @@ namespace scene
 {
 	class IMeshCache;
 	class IGeometryCreator;
+	class IInstancedMeshSceneNode;
 
 	/*!
 		The Scene Manager manages scene nodes, mesh recources, cameras and all the other stuff.
@@ -89,6 +90,13 @@ namespace scene
 			const core::vector3df& scale = core::vector3df(1.0f, 1.0f, 1.0f),
 			bool alsoAddIfMeshPointerZero=false) _IRR_OVERRIDE_;
 
+		//! adds a scene node for rendering an instanced mesh model
+		virtual IInstancedMeshSceneNode* addInstancedMeshSceneNode(IMesh* mesh, ISceneNode* parent = 0, s32 id = -1,
+			const core::vector3df& position = core::vector3df(0, 0, 0),
+			const core::vector3df& rotation = core::vector3df(0, 0, 0),
+			const core::vector3df& scale = core::vector3df(1.0f, 1.0f, 1.0f),
+			bool alsoAddIfMeshPointerZero = false);
+
 		//! adds a scene node for rendering a static mesh
 		//! the returned pointer must not be dropped.
 		virtual IMeshSceneNode* addMeshSceneNode(IMesh* mesh, ISceneNode* parent=0, s32 id=-1,
@@ -114,18 +122,6 @@ namespace scene
 
 		//! draws all scene nodes
 		virtual void drawAll() _IRR_OVERRIDE_;
-
-		//! Adds a scene node for rendering using a octree to the scene graph. This a good method for rendering
-		//! scenes with lots of geometry. The Octree is built on the fly from the mesh, much
-		//! faster then a bsp tree.
-		virtual IMeshSceneNode* addOctreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent=0,
-			s32 id=-1, s32 minimalPolysPerNode=512, bool alsoAddIfMeshPointerZero=false) _IRR_OVERRIDE_;
-
-		//! Adss a scene node for rendering using a octree. This a good method for rendering
-		//! scenes with lots of geometry. The Octree is built on the fly from the mesh, much
-		//! faster then a bsp tree.
-		virtual IMeshSceneNode* addOctreeSceneNode(IMesh* mesh, ISceneNode* parent=0,
-			s32 id=-1, s32 minimalPolysPerNode=128, bool alsoAddIfMeshPointerZero=false) _IRR_OVERRIDE_;
 
 		//! Adds a camera scene node to the tree and sets it as active camera.
 		//! \param position: Position of the space relative to its parent where the camera will be placed.
@@ -521,6 +517,17 @@ namespace scene
 
 		//! returns if node is culled
 		virtual bool isCulled(const ISceneNode* node) const _IRR_OVERRIDE_;
+
+		//! returns if this is culled
+		virtual bool isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, const core::matrix4& absoluteTransformation) const;
+
+	protected:
+
+		//! Adds a scene node for rendering using a octree to the scene graph. This a good method for rendering
+		//! scenes with lots of geometry. The Octree is built on the fly from the mesh, much
+		//! faster then a bsp tree.
+		virtual IMeshSceneNode* addOctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshes, IMesh* origMesh, ISceneNode* parent=0,
+			s32 id=-1, s32 minimalPolysPerNode=512) _IRR_OVERRIDE_;
 
 	private:
 

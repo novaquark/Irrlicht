@@ -285,9 +285,6 @@
     <ClInclude Include="..\..\include\path.h">
       <Filter>include\io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\CDynamicMeshBuffer.h">
-      <Filter>include\scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\CIndexBuffer.h">
       <Filter>include\scene</Filter>
     </ClInclude>
@@ -1324,7 +1321,16 @@
     <ClInclude Include="CCgMaterialRenderer.h">
       <Filter>Irrlicht\video</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\SSharedMeshBuffer.h">
+    <ClInclude Include="..\..\include\IVertexBuffer.h">
+      <Filter>include\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\IVertexDescriptor.h">
+      <Filter>include\video</Filter>
+    </ClInclude>
+    <ClInclude Include="CVertexDescriptor.h">
+      <Filter>Irrlicht\video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\IIndexBuffer.h">
       <Filter>include\scene</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\IProfiler.h">
@@ -2277,6 +2283,9 @@
       <Filter>Irrlicht\video\OpenGL</Filter>
     </ClCompile>
     <ClCompile Include="CCgMaterialRenderer.cpp">
+      <Filter>Irrlicht\video</Filter>
+    </ClCompile>
+    <ClCompile Include="CVertexDescriptor.cpp">
       <Filter>Irrlicht\video</Filter>
     </ClCompile>
     <ClCompile Include="leakHunter.cpp">

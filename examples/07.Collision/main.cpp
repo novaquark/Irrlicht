@@ -60,7 +60,7 @@ int main()
 
 	// The Quake mesh is pickable, but doesn't get highlighted.
 	if (q3levelmesh)
-		q3node = smgr->addOctreeSceneNode(q3levelmesh->getMesh(0), 0, IDFlag_IsPickable);
+		q3node = smgr->addOctreeSceneNode<video::S3DVertex2TCoords>(q3levelmesh->getMesh(0), 0, IDFlag_IsPickable);
 
 	/*
 	So far so good, we've loaded the quake 3 level like in tutorial 2. Now,

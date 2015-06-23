@@ -51,24 +51,57 @@ public:
 class CSampleSceneNode : public ISceneNode
 {
 	aabbox3d<f32> Box;
-	S3DVertex Vertices[4];
+	scene::IVertexBuffer* VertexBuffer;
+	scene::IIndexBuffer* IndexBuffer;
+	video::IVertexDescriptor* Descriptor;
 	SMaterial Material;
 public:
 
 	CSampleSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 id)
 		: ISceneNode(parent, mgr, id)
 	{
+		Descriptor = mgr->getVideoDriver()->getVertexDescriptor(0);
+
+		VertexBuffer = new scene::CVertexBuffer<S3DVertex>();
+		IndexBuffer = new scene::CIndexBuffer(video::EIT_16BIT);
+
 		Material.Wireframe = false;
 		Material.Lighting = false;
+
+		S3DVertex Vertices[4];
 
 		Vertices[0] = S3DVertex(0,0,10, 1,1,0, SColor(255,0,255,255), 0, 1);
 		Vertices[1] = S3DVertex(10,0,-10, 1,0,0, SColor(255,255,0,255), 1, 1);
 		Vertices[2] = S3DVertex(0,20,0, 0,1,1, SColor(255,255,255,0), 1, 0);
 		Vertices[3] = S3DVertex(-10,0,-10, 0,0,1, SColor(255,0,255,0), 0, 0);
+
+		for (s32 i = 0; i<4; ++i)
+			VertexBuffer->addVertex(&Vertices[i]);
+
+		IndexBuffer->addIndex(0);
+		IndexBuffer->addIndex(2);
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(2);
+		IndexBuffer->addIndex(1);
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(1);
+		IndexBuffer->addIndex(0);
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(2);
+		IndexBuffer->addIndex(0);
+		IndexBuffer->addIndex(1);
+
 		Box.reset(Vertices[0].Pos);
 		for (s32 i=1; i<4; ++i)
 			Box.addInternalPoint(Vertices[i].Pos);
+
 	}
+	~CSampleSceneNode()
+	{
+		VertexBuffer->drop();
+		IndexBuffer->drop();
+	}
+
 	virtual void OnRegisterSceneNode()
 	{
 		if (IsVisible)
@@ -79,12 +112,11 @@ public:
 
 	virtual void render()
 	{
-		u16 indices[] = {	0,2,3, 2,1,3, 1,0,3, 2,0,1	};
 		IVideoDriver* driver = SceneManager->getVideoDriver();
 
 		driver->setMaterial(Material);
 		driver->setTransform(ETS_WORLD, AbsoluteTransformation);
-		driver->drawIndexedTriangleList(&Vertices[0], 4, &indices[0], 4);
+		driver->drawIndexedTriangleList(VertexBuffer, IndexBuffer, Descriptor, 4);
 	}
 
 	virtual const aabbox3d<f32>& getBoundingBox() const
@@ -395,14 +427,6 @@ int example_terrain()
 		selector->drop();
 		camera->addAnimator(anim);
 		anim->drop();
-
-		/* If you need access to the terrain data you can also do this directly via the following code fragment.
-		*/
-		scene::CDynamicMeshBuffer* buffer = new scene::CDynamicMeshBuffer(video::EVT_2TCOORDS, video::EIT_16BIT);
-		terrain->getMeshBufferForLOD(*buffer, 0);
-		video::S3DVertex2TCoords* data = (video::S3DVertex2TCoords*)buffer->getVertexBuffer().getData();
-		// Work on data or get the IndexBuffer with a similar call.
-		buffer->drop(); // When done drop the buffer again.
 	}
 
 	/*

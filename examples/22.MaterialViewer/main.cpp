@@ -718,15 +718,27 @@ bool CApp::init(int argc, char *argv[])
 	MeshMaterialControl.selectTextures(core::stringw("CARO_A8R8G8B8"));	// set a useful default texture
 
 	// create nodes with other vertex types
-	scene::IMesh * mesh2T = MeshManipulator->createMeshWith2TCoords(SceneNode->getMesh());
-	SceneNode2T = smgr->addMeshSceneNode(mesh2T, 0, -1, SceneNode->getPosition(), SceneNode->getRotation(), SceneNode->getScale() );
-	mesh2T->drop();
+	scene::IMesh * mesh2T = meshManip->createMeshCopy<video::S3DVertex>(node->getMesh(), Driver->getVertexDescriptor(0));
 
-	scene::IMesh * meshTangents = MeshManipulator->createMeshWithTangents(SceneNode->getMesh(), false, false, false);
-	SceneNodeTangents = smgr->addMeshSceneNode(meshTangents, 0, -1
-										, SceneNode->getPosition(), SceneNode->getRotation(), SceneNode->getScale() );
-	meshTangents->drop();
+	if (mesh2T)
+	{
+		for(u32 l = 0; l < mesh2T->getMeshBufferCount(); ++l)
+			smgr->getMeshManipulator()->convertVertices<video::S3DVertex2TCoords>(mesh2T->getMeshBuffer(l), Driver->getVertexDescriptor(1), false);
 
+		SceneNode2T = smgr->addMeshSceneNode(mesh2T, 0, -1, SceneNode->getPosition(), SceneNode->getRotation(), SceneNode->getScale() );
+		mesh2T->drop();
+	}
+
+	scene::IMesh * meshTangents = meshManip->createMeshCopy<video::S3DVertex>(node->getMesh(), Driver->getVertexDescriptor(0));
+
+	if (meshTangents)
+	{
+		for(u32 l = 0; l < meshTangents->getMeshBufferCount(); ++l)
+			smgr->getMeshManipulator()->createTangents<video::S3DVertexTangents>(meshTangents->getMeshBuffer(l), Driver->getVertexDescriptor(2), false);
+
+		SceneNodeTangents = smgr->addMeshSceneNode(meshTangents, 0, -1, SceneNode->getPosition(), SceneNode->getRotation(), SceneNode->getScale() );
+		meshTangents->drop();
+	}
 
 	// add one light
 	NodeLight = smgr->addLightSceneNode(0, core::vector3df(0, 0, -40),
@@ -745,7 +757,7 @@ bool CApp::init(int argc, char *argv[])
 	// Add a the mesh vertex color control
 	guiEnv->addStaticText(L"Mesh", core::rect<s32>(200, controlsTop, 270, controlsTop+15), false, false, 0, -1, false);
 	ControlVertexColors = new CColorControl( guiEnv, core::position2d<s32>(200, controlsTop+15), L"Vertex colors", guiEnv->getRootGUIElement());
-	video::S3DVertex * vertices =  (video::S3DVertex *)SceneNode->getMesh()->getMeshBuffer(0)->getVertices();
+	video::S3DVertex * vertices =  (video::S3DVertex *)SceneNode->getMesh()->getMeshBuffer(0)->getVertexBuffer()->getVertices();
 	if ( vertices )
 	{
 		ControlVertexColors->setColor(vertices[0].Color);

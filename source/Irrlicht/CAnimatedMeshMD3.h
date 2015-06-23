@@ -11,7 +11,7 @@
 #include "irrArray.h"
 #include "irrString.h"
 #include "SMesh.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "IQ3Shader.h"
 
 namespace irr
@@ -121,7 +121,7 @@ namespace scene
 
 		void buildVertexArray(u32 frameA, u32 frameB, f32 interpolate,
 					const SMD3MeshBuffer* source,
-					SMeshBufferLightMap* dest);
+					CMeshBuffer<video::S3DVertex2TCoords>* dest);
 
 		void buildTagArray(u32 frameA, u32 frameB, f32 interpolate);
 		f32 FramesPerSecond;

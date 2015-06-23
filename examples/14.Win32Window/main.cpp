@@ -19,7 +19,7 @@ windows book for details.
 
 using namespace irr;
 
-#pragma comment(lib, "irrlicht.lib")
+#pragma comment(lib, "Irrlicht.lib")
 
 HWND hOKButton;
 HWND hWnd;

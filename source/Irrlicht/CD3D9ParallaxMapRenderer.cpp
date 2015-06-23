@@ -38,8 +38,8 @@ namespace video
 		"dcl_normal    v1              ; normal \n"\
 		"dcl_color     v2              ; color \n"\
 		"dcl_texcoord0 v3              ; texture coord \n"\
-		"dcl_texcoord1 v4              ; tangent \n"\
-		"dcl_texcoord2 v5              ; binormal \n"\
+		"dcl_tangent v4              ; tangent \n"\
+		"dcl_binormal v5              ; binormal \n"\
 		"\n"\
 		"def c95, 0.5, 0.5, 0.5, 0.5   ; used for moving light vector to ps \n"\
 		"def c96, -1, 1, 1, 1   ; somewhere I've got a bug. flipping the vectors with this fixes it. \n"\
@@ -302,12 +302,6 @@ namespace video
 
 	bool CD3D9ParallaxMapRenderer::OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype)
 	{
-		if (vtxtype != video::EVT_TANGENTS)
-		{
-			os::Printer::log("Error: Parallax map renderer only supports vertices of type EVT_TANGENTS", ELL_ERROR);
-			return false;
-		}
-
 		return CD3D9ShaderMaterialRenderer::OnRender(service, vtxtype);
 	}
 

@@ -7,6 +7,7 @@
 
 #include "IBillboardSceneNode.h"
 #include "S3DVertex.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -24,6 +25,9 @@ public:
 		const core::vector3df& position, const core::dimension2d<f32>& size,
 		video::SColor colorTop=video::SColor(0xFFFFFFFF),
 		video::SColor colorBottom=video::SColor(0xFFFFFFFF));
+
+	//! destructor
+	~CBillboardSceneNode();
 
 	//! pre render event
 	virtual void OnRegisterSceneNode() _IRR_OVERRIDE_;
@@ -84,11 +88,8 @@ private:
 	//! Size.Width is the bottom edge width
 	core::dimension2d<f32> Size;
 	f32 TopEdgeWidth;
-	core::aabbox3d<f32> BBox;
-	video::SMaterial Material;
 
-	video::S3DVertex vertices[4];
-	u16 indices[6];
+	IMeshBuffer* MeshBuffer;
 };
 
 

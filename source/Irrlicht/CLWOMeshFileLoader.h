@@ -6,7 +6,7 @@
 #define __C_LWO_MESH_FILE_LOADER_H_INCLUDED__
 
 #include "IMeshLoader.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "irrString.h"
 
 namespace irr

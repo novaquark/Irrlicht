@@ -86,7 +86,7 @@ ISceneNode* CDefaultSceneNodeFactory::addSceneNode(ESCENE_NODE_TYPE type, IScene
 	case ESNT_SHADOW_VOLUME:
 		return 0;
 	case ESNT_OCTREE:
-		return Manager->addOctreeSceneNode((IMesh*)0, parent, -1, 128, true);
+		return Manager->addOctreeSceneNode<video::S3DVertex>((IMesh*)0, parent, -1, 128, true);
 	case ESNT_MESH:
 		return Manager->addMeshSceneNode(0, parent, -1, core::vector3df(),
 										 core::vector3df(), core::vector3df(1,1,1), true);

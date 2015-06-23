@@ -49,8 +49,16 @@ EMESH_WRITER_TYPE CSTLMeshWriter::getType() const
 //! writes a mesh
 bool CSTLMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 flags)
 {
-	if (!file)
+	if (!file || !mesh)
 		return false;
+
+	for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+	{
+		u32 Size = mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexSize();
+
+		if(Size != sizeof(video::S3DVertex) && Size != sizeof(video::S3DVertex2TCoords) && Size != sizeof(video::S3DVertexTangents))
+			return false;
+	}
 
 	os::Printer::log("Writing mesh", file->getFileName());
 
@@ -80,7 +88,7 @@ bool CSTLMeshWriter::writeMeshBinary(io::IWriteFile* file, scene::IMesh* mesh, s
 	}
 	u32 facenum = 0;
 	for (u32 j=0; j<mesh->getMeshBufferCount(); ++j)
-		facenum += mesh->getMeshBuffer(j)->getIndexCount()/3;
+		facenum += mesh->getMeshBuffer(j)->getIndexBuffer()->getIndexCount()/3;
 	file->write(&facenum,4);
 
 	// write mesh buffers
@@ -90,13 +98,26 @@ bool CSTLMeshWriter::writeMeshBinary(io::IWriteFile* file, scene::IMesh* mesh, s
 		IMeshBuffer* buffer = mesh->getMeshBuffer(i);
 		if (buffer)
 		{
-			const u32 indexCount = buffer->getIndexCount();
+			const u32 indexCount = buffer->getIndexBuffer()->getIndexCount();
 			const u16 attributes = 0;
+
+			video::IVertexAttribute* attribute = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+			if(!attribute)
+				continue;
+
+			u8* Vertices = static_cast<u8*>(buffer->getVertexBuffer()->getVertices());
+			Vertices += attribute->getOffset();
+
 			for (u32 j=0; j<indexCount; j+=3)
 			{
-				const core::vector3df& v1 = buffer->getPosition(buffer->getIndices()[j]);
-				const core::vector3df& v2 = buffer->getPosition(buffer->getIndices()[j+1]);
-				const core::vector3df& v3 = buffer->getPosition(buffer->getIndices()[j+2]);
+				core::vector3df* position0 = (core::vector3df*)(Vertices + buffer->getVertexBuffer()->getVertexSize() * buffer->getIndexBuffer()->getIndex(j));
+				core::vector3df* position1 = (core::vector3df*)(Vertices + buffer->getVertexBuffer()->getVertexSize() * buffer->getIndexBuffer()->getIndex(j+1));
+				core::vector3df* position2 = (core::vector3df*)(Vertices + buffer->getVertexBuffer()->getVertexSize() * buffer->getIndexBuffer()->getIndex(j+2));
+
+				const core::vector3df& v1 = *position0;
+				const core::vector3df& v2 = *position1;
+				const core::vector3df& v3 = *position2;
 				const core::plane3df tmpplane(v1,v2,v3);
 				file->write(&tmpplane.Normal, 12);
 				file->write(&v1, 12);
@@ -126,13 +147,22 @@ bool CSTLMeshWriter::writeMeshASCII(io::IWriteFile* file, scene::IMesh* mesh, s3
 		IMeshBuffer* buffer = mesh->getMeshBuffer(i);
 		if (buffer)
 		{
-			const u32 indexCount = buffer->getIndexCount();
+			video::IVertexAttribute* attribute = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+			if(!attribute)
+				continue;
+
+			u8* Vertices = static_cast<u8*>(buffer->getVertexBuffer()->getVertices());
+			Vertices += attribute->getOffset();
+
+			const u32 indexCount = buffer->getIndexBuffer()->getIndexCount();
 			for (u32 j=0; j<indexCount; j+=3)
 			{
-				writeFace(file,
-					buffer->getPosition(buffer->getIndices()[j]),
-					buffer->getPosition(buffer->getIndices()[j+1]),
-					buffer->getPosition(buffer->getIndices()[j+2]));
+				core::vector3df* position0 = (core::vector3df*)(Vertices + buffer->getVertexBuffer()->getVertexSize() * buffer->getIndexBuffer()->getIndex(j));
+				core::vector3df* position1 = (core::vector3df*)(Vertices + buffer->getVertexBuffer()->getVertexSize() * buffer->getIndexBuffer()->getIndex(j+1));
+				core::vector3df* position2 = (core::vector3df*)(Vertices + buffer->getVertexBuffer()->getVertexSize() * buffer->getIndexBuffer()->getIndex(j+2));
+
+				writeFace(file, *position0, *position1, *position2);
 			}
 			file->write("\n",1);
 		}

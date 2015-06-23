@@ -245,8 +245,8 @@ void CShadowVolumeSceneNode::updateShadowVolumes()
 	for (i=0; i<bufcnt; ++i)
 	{
 		const IMeshBuffer* buf = mesh->getMeshBuffer(i);
-		totalIndices += buf->getIndexCount();
-		totalVertices += buf->getVertexCount();
+		totalIndices += buf->getIndexBuffer()->getIndexCount();
+		totalVertices += buf->getVertexBuffer()->getVertexCount();
 	}
 
 	// allocate memory if necessary
@@ -260,14 +260,38 @@ void CShadowVolumeSceneNode::updateShadowVolumes()
 	{
 		const IMeshBuffer* buf = mesh->getMeshBuffer(i);
 
-		const u16* idxp = buf->getIndices();
-		const u16* idxpend = idxp + buf->getIndexCount();
-		for (; idxp!=idxpend; ++idxp)
-			Indices[IndexCount++] = *idxp + VertexCount;
+		video::IVertexAttribute* attribute = buf->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
-		const u32 vtxcnt = buf->getVertexCount();
+		if(!attribute)
+			continue;
+
+		u8* offset = static_cast<u8*>(buf->getVertexBuffer()->getVertices());		
+		offset += attribute->getOffset();
+
+		if(buf->getIndexBuffer()->getType() == video::EIT_32BIT)
+		{
+			const u32* idxp = (const u32*)buf->getIndexBuffer()->getIndices();
+			const u32* idxpend = idxp + buf->getIndexBuffer()->getIndexCount();
+			for (; idxp!=idxpend; ++idxp)
+				Indices[IndexCount++] = *idxp + VertexCount;
+		}
+		else // video::EIT_16BIT
+		{
+			const u16* idxp = (const u16*)buf->getIndexBuffer()->getIndices();
+			const u16* idxpend = idxp + buf->getIndexBuffer()->getIndexCount();
+			for (; idxp!=idxpend; ++idxp)
+				Indices[IndexCount++] = *idxp + VertexCount;
+		}
+
+		const u32 vtxcnt = buf->getVertexBuffer()->getVertexCount();
 		for (u32 j=0; j<vtxcnt; ++j)
-			Vertices[VertexCount++] = buf->getPosition(j);
+		{
+			core::vector3df* position = (core::vector3df*)offset;
+
+			Vertices[VertexCount++] = *position;
+
+			offset += buf->getVertexBuffer()->getVertexSize();
+		}
 	}
 
 	// recalculate adjacency if necessary

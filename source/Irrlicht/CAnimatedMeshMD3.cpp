@@ -197,7 +197,7 @@ IMesh* CAnimatedMeshMD3::getMesh(s32 frame, s32 detailLevel, s32 startFrameLoop,
 	{
 		buildVertexArray(frameA, frameB, iPol,
 					Mesh->Buffer[i],
-					(SMeshBufferLightMap*) MeshIPol->getMeshBuffer(i));
+					(CMeshBuffer<video::S3DVertex2TCoords>*) MeshIPol->getMeshBuffer(i));
 	}
 	MeshIPol->recalculateBoundingBox();
 
@@ -213,24 +213,26 @@ IMesh* CAnimatedMeshMD3::getMesh(s32 frame, s32 detailLevel, s32 startFrameLoop,
 IMeshBuffer * CAnimatedMeshMD3::createMeshBuffer(const SMD3MeshBuffer* source,
 							 io::IFileSystem* fs, video::IVideoDriver * driver)
 {
-	SMeshBufferLightMap * dest = new SMeshBufferLightMap();
-	dest->Vertices.set_used(source->MeshHeader.numVertices);
-	dest->Indices.set_used(source->Indices.size());
+	CMeshBuffer<video::S3DVertex2TCoords>* dest = new CMeshBuffer<video::S3DVertex2TCoords>(driver->getVertexDescriptor(1));
+	dest->getVertexBuffer()->set_used(source->MeshHeader.numVertices);
+	dest->getIndexBuffer()->set_used(source->Indices.size());
 
 	u32 i;
 
 	// fill in static face info
 	for (i = 0; i < source->Indices.size(); i += 3)
 	{
-		dest->Indices[i + 0] = (u16) source->Indices[i + 0];
-		dest->Indices[i + 1] = (u16) source->Indices[i + 1];
-		dest->Indices[i + 2] = (u16) source->Indices[i + 2];
+		dest->getIndexBuffer()->setIndex(i + 0, source->Indices[i + 0]);
+		dest->getIndexBuffer()->setIndex(i + 1, source->Indices[i + 1]);
+		dest->getIndexBuffer()->setIndex(i + 2, source->Indices[i + 2]);
 	}
+
+	video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)dest->getVertexBuffer()->getVertices();
 
 	// fill in static vertex info
 	for (i = 0; i!= (u32)source->MeshHeader.numVertices; ++i)
 	{
-		video::S3DVertex2TCoords &v = dest->Vertices[i];
+		video::S3DVertex2TCoords &v = Vertices[i];
 		v.Color = 0xFFFFFFFF;
 		v.TCoords.X = source->Tex[i].u;
 		v.TCoords.Y = source->Tex[i].v;
@@ -242,9 +244,9 @@ IMeshBuffer * CAnimatedMeshMD3::createMeshBuffer(const SMD3MeshBuffer* source,
 	u32 pos = 0;
 	quake3::tTexArray textureArray;
 	quake3::getTextures(textureArray, source->Shader, pos, fs, driver);
-	dest->Material.MaterialType = video::EMT_SOLID;
-	dest->Material.setTexture(0, textureArray[0]);
-	dest->Material.Lighting = false;
+	dest->getMaterial().MaterialType = video::EMT_SOLID;
+	dest->getMaterial().setTexture(0, textureArray[0]);
+	dest->getMaterial().Lighting = false;
 
 	return dest;
 }
@@ -253,15 +255,17 @@ IMeshBuffer * CAnimatedMeshMD3::createMeshBuffer(const SMD3MeshBuffer* source,
 //! build final mesh's vertices from frames frameA and frameB with linear interpolation.
 void CAnimatedMeshMD3::buildVertexArray(u32 frameA, u32 frameB, f32 interpolate,
 					const SMD3MeshBuffer* source,
-					SMeshBufferLightMap* dest)
+					CMeshBuffer<video::S3DVertex2TCoords>* dest)
 {
 	const u32 frameOffsetA = frameA * source->MeshHeader.numVertices;
 	const u32 frameOffsetB = frameB * source->MeshHeader.numVertices;
 	const f32 scale = (1.f/ 64.f);
 
+	video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)dest->getVertexBuffer()->getVertices();
+
 	for (s32 i = 0; i != source->MeshHeader.numVertices; ++i)
 	{
-		video::S3DVertex2TCoords &v = dest->Vertices [ i ];
+		video::S3DVertex2TCoords &v = Vertices [ i ];
 
 		const SMD3Vertex &vA = source->Vertices [ frameOffsetA + i ];
 		const SMD3Vertex &vB = source->Vertices [ frameOffsetB + i ];

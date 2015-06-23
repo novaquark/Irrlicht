@@ -13,8 +13,7 @@
 #include "IReadFile.h"
 #include "IAttributes.h"
 #include "IMeshSceneNode.h"
-#include "CDynamicMeshBuffer.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -139,7 +138,7 @@ IAnimatedMesh* CIrrMeshFileLoader::readMesh(io::IXMLReader* reader)
 //! reads a mesh sections and creates a mesh buffer from it
 IMeshBuffer* CIrrMeshFileLoader::readMeshBuffer(io::IXMLReader* reader)
 {
-	CDynamicMeshBuffer* buffer = 0;
+	IMeshBuffer* buffer = 0;
 
 	core::stringc verticesSectionName = "vertices";
 	core::stringc bbSectionName = "boundingBox";
@@ -194,21 +193,22 @@ IMeshBuffer* CIrrMeshFileLoader::readMeshBuffer(io::IXMLReader* reader)
 				video::E_INDEX_TYPE itype = (vertexCount > 65536)?irr::video::EIT_32BIT:irr::video::EIT_16BIT;
 				if (vertexTypeName1 == vertexType)
 				{
-					buffer = new CDynamicMeshBuffer(irr::video::EVT_STANDARD, itype);
-
+					buffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0), itype);
+					((CMeshBuffer<video::S3DVertex>*)buffer)->getMaterial() = material;
 				}
 				else
 				if (vertexTypeName2 == vertexType)
 				{
-					buffer = new CDynamicMeshBuffer(irr::video::EVT_2TCOORDS, itype);
+					buffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1), itype);
+					((CMeshBuffer<video::S3DVertex2TCoords>*)buffer)->getMaterial() = material;
 				}
 				else
 				if (vertexTypeName3 == vertexType)
 				{
-					buffer = new CDynamicMeshBuffer(irr::video::EVT_TANGENTS, itype);
+					buffer = new CMeshBuffer<video::S3DVertexTangents>(SceneManager->getVideoDriver()->getVertexDescriptor(2), itype);
+					((CMeshBuffer<video::S3DVertexTangents>*)buffer)->getMaterial() = material;
 				}
-				buffer->getVertexBuffer().reallocate(vertexCount);
-				buffer->Material = material;
+				buffer->getVertexBuffer()->reallocate(vertexCount);
 			}
 			else
 			if (indicesSectionName == nodeName)
@@ -257,9 +257,9 @@ IMeshBuffer* CIrrMeshFileLoader::readMeshBuffer(io::IXMLReader* reader)
 
 
 //! read indices
-void CIrrMeshFileLoader::readIndices(io::IXMLReader* reader, int indexCount, IIndexBuffer& indices)
+void CIrrMeshFileLoader::readIndices(io::IXMLReader* reader, int indexCount, IIndexBuffer* indices)
 {
-	indices.reallocate(indexCount);
+	indices->reallocate(indexCount);
 
 	core::stringc data = reader->getNodeData();
 	const c8* p = &data[0];
@@ -267,25 +267,23 @@ void CIrrMeshFileLoader::readIndices(io::IXMLReader* reader, int indexCount, IIn
 	for (int i=0; i<indexCount && *p; ++i)
 	{
 		findNextNoneWhiteSpace(&p);
-		indices.push_back(readInt(&p));
+		indices->addIndex(readInt(&p));
 	}
 }
 
 
-void CIrrMeshFileLoader::readMeshBuffer(io::IXMLReader* reader, int vertexCount, CDynamicMeshBuffer* sbuffer)
+void CIrrMeshFileLoader::readMeshBuffer(io::IXMLReader* reader, int vertexCount, IMeshBuffer* sbuffer)
 {
 	core::stringc data = reader->getNodeData();
 	const c8* p = &data[0];
-	scene::IVertexBuffer& Vertices = sbuffer->getVertexBuffer();
-	video::E_VERTEX_TYPE vType = Vertices.getType();
 
 	if (sbuffer)
 	{
 		for (int i=0; i<vertexCount && *p; ++i)
 		{
-			switch(vType)
+			switch(sbuffer->getVertexBuffer()->getVertexSize())
 			{
-			case video::EVT_STANDARD:
+			case sizeof(video::S3DVertex):
 			{
 				video::S3DVertex vtx;
 				// position
@@ -321,10 +319,10 @@ void CIrrMeshFileLoader::readMeshBuffer(io::IXMLReader* reader, int vertexCount,
 				findNextNoneWhiteSpace(&p);
 				vtx.TCoords.Y = readFloat(&p);
 
-				Vertices.push_back(vtx);
+				sbuffer->getVertexBuffer()->addVertex(&vtx);
 			}
 			break;
-			case video::EVT_2TCOORDS:
+			case sizeof(video::S3DVertex2TCoords):
 			{
 				video::S3DVertex2TCoords vtx;
 				// position
@@ -367,11 +365,10 @@ void CIrrMeshFileLoader::readMeshBuffer(io::IXMLReader* reader, int vertexCount,
 				findNextNoneWhiteSpace(&p);
 				vtx.TCoords2.Y = readFloat(&p);
 
-				Vertices.push_back(vtx);
+				sbuffer->getVertexBuffer()->addVertex(&vtx);
 			}
 			break;
-
-			case video::EVT_TANGENTS:
+			case sizeof(video::S3DVertexTangents):
 			{
 				video::S3DVertexTangents vtx;
 				// position
@@ -425,7 +422,7 @@ void CIrrMeshFileLoader::readMeshBuffer(io::IXMLReader* reader, int vertexCount,
 				findNextNoneWhiteSpace(&p);
 				vtx.Binormal.Z = readFloat(&p);
 
-				Vertices.push_back(vtx);
+				sbuffer->getVertexBuffer()->addVertex(&vtx);
 			}
 			break;
 			};

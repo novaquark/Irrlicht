@@ -7,6 +7,7 @@
 
 #include "ISceneNode.h"
 #include "S3DVertex.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -22,6 +23,9 @@ namespace scene
 		CSkyBoxSceneNode(video::ITexture* top, video::ITexture* bottom, video::ITexture* left,
 			video::ITexture* right, video::ITexture* front, video::ITexture* back,
 			ISceneNode* parent, ISceneManager* mgr, s32 id);
+
+        //! destructor
+        ~CSkyBoxSceneNode();
 
 		virtual void OnRegisterSceneNode() _IRR_OVERRIDE_;
 
@@ -49,10 +53,7 @@ namespace scene
 
 	private:
 
-		core::aabbox3d<f32> Box;
-		u16 Indices[4];
-		video::S3DVertex Vertices[4*6];
-		video::SMaterial Material[6];
+		IMeshBuffer* MeshBuffer[6];
 	};
 
 } // end namespace scene

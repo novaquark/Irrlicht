@@ -373,6 +373,8 @@ bool CD3D8Driver::initDriver(HWND hwnd, bool pureSoftware)
 
 	if (!BridgeCalls)
 		BridgeCalls = new CD3D8CallBridge(pID3DDevice);
+		
+	createVertexDescriptors();
 
 	// set default vertex shader
 	setVertexShader(EVT_STANDARD);
@@ -874,6 +876,32 @@ const core::rect<s32>& CD3D8Driver::getViewPort() const
 }
 
 
+void CD3D8Driver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+	bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+
+{
+	E_VERTEX_TYPE vType = EVT_STANDARD;
+
+	// Supported are only built-in Irrlicht vertex formats.
+	switch(vertexBuffer->getVertexSize())
+	{
+	case sizeof(S3DVertex):
+		vType = EVT_STANDARD;
+		break;
+	case sizeof(S3DVertex2TCoords):
+		vType = EVT_2TCOORDS;
+		break;
+	case sizeof(S3DVertexTangents):
+		vType = EVT_TANGENTS;
+		break;
+	default:
+		return;
+	}
+
+	drawVertexPrimitiveList(vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), indexBuffer->getIndices(), primitiveCount, vType, pType, indexBuffer->getType());
+}
+
+
 //! draws a vertex primitive list
 void CD3D8Driver::drawVertexPrimitiveList(const void* vertices,
 		u32 vertexCount, const void* indexList, u32 primitiveCount,
@@ -883,7 +911,11 @@ void CD3D8Driver::drawVertexPrimitiveList(const void* vertices,
 	if (!checkPrimitiveCount(primitiveCount))
 		return;
 
-	CNullDriver::drawVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount, vType, pType,iType);
+	// Emulate CNullDriver::drawVertexPrimitiveList call.
+	if((iType == EIT_16BIT) && (vertexCount > 65536))
+		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
+
+	PrimitivesDrawn += primitiveCount;
 
 	if (!vertexCount || !primitiveCount)
 		return;

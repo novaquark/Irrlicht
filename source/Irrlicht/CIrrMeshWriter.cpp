@@ -55,8 +55,16 @@ EMESH_WRITER_TYPE CIrrMeshWriter::getType() const
 //! writes a mesh
 bool CIrrMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 flags)
 {
-	if (!file)
+	if (!file || !mesh)
 		return false;
+
+	for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+	{
+		u32 Size = mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexSize();
+
+		if(Size != sizeof(video::S3DVertex) && Size != sizeof(video::S3DVertex2TCoords) && Size != sizeof(video::S3DVertexTangents))
+			return false;
+	}
 
 	Writer = FileSystem->createXMLWriter(file);
 
@@ -161,21 +169,34 @@ void CIrrMeshWriter::writeMeshBuffer(const scene::IMeshBuffer* buffer)
 
 	// write vertices
 
-	const core::stringw vertexTypeStr = video::sBuiltInVertexTypeNames[buffer->getVertexType()];
+	core::stringw vertexTypeStr = L"";
+	
+	switch(buffer->getVertexBuffer()->getVertexSize())
+	{
+	case sizeof(video::S3DVertex):
+		vertexTypeStr = video::sBuiltInVertexTypeNames[0];
+		break;
+	case sizeof(video::S3DVertex2TCoords):
+		vertexTypeStr = video::sBuiltInVertexTypeNames[1];
+		break;
+	case sizeof(video::S3DVertexTangents):
+		vertexTypeStr = video::sBuiltInVertexTypeNames[2];
+		break;
+	}
 
 	Writer->writeElement(L"vertices", false,
 		L"type", vertexTypeStr.c_str(),
-		L"vertexCount", core::stringw(buffer->getVertexCount()).c_str());
+		L"vertexCount", core::stringw(buffer->getVertexBuffer()->getVertexCount()).c_str());
 
 	Writer->writeLineBreak();
 
-	u32 vertexCount = buffer->getVertexCount();
+	u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
-	switch(buffer->getVertexType())
+	switch(buffer->getVertexBuffer()->getVertexSize())
 	{
-	case video::EVT_STANDARD:
+	case sizeof(video::S3DVertex):
 		{
-			video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertices();
+			video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 			for (u32 j=0; j<vertexCount; ++j)
 			{
 				core::stringw str = getVectorAsStringLine(vtx[j].Pos);
@@ -193,9 +214,9 @@ void CIrrMeshWriter::writeMeshBuffer(const scene::IMeshBuffer* buffer)
 			}
 		}
 		break;
-	case video::EVT_2TCOORDS:
+	case sizeof(video::S3DVertex2TCoords):
 		{
-			video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+			video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 			for (u32 j=0; j<vertexCount; ++j)
 			{
 				core::stringw str = getVectorAsStringLine(vtx[j].Pos);
@@ -215,9 +236,9 @@ void CIrrMeshWriter::writeMeshBuffer(const scene::IMeshBuffer* buffer)
 			}
 		}
 		break;
-	case video::EVT_TANGENTS:
+	case sizeof(video::S3DVertexTangents):
 		{
-			video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertices();
+			video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertexBuffer()->getVertices();
 			for (u32 j=0; j<vertexCount; ++j)
 			{
 				core::stringw str = getVectorAsStringLine(vtx[j].Pos);
@@ -247,16 +268,16 @@ void CIrrMeshWriter::writeMeshBuffer(const scene::IMeshBuffer* buffer)
 	// write indices
 
 	Writer->writeElement(L"indices", false,
-		L"indexCount", core::stringw(buffer->getIndexCount()).c_str());
+		L"indexCount", core::stringw(buffer->getIndexBuffer()->getIndexCount()).c_str());
 
 	Writer->writeLineBreak();
 
-	int indexCount = (int)buffer->getIndexCount();
+	int indexCount = (int)buffer->getIndexBuffer()->getIndexCount();
 
-	video::E_INDEX_TYPE iType = buffer->getIndexType();
+	video::E_INDEX_TYPE iType = buffer->getIndexBuffer()->getType();
 
-	const u16* idx16 = buffer->getIndices();
-	const u32* idx32 = (u32*) buffer->getIndices();
+	const u16* idx16 = (u16*) buffer->getIndexBuffer()->getIndices();
+	const u32* idx32 = (u32*) buffer->getIndexBuffer()->getIndices();
 	const int maxIndicesPerLine = 25;
 
 	for (int i=0; i<indexCount; ++i)

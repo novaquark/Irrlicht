@@ -70,6 +70,10 @@ namespace video
 		virtual const core::rect<s32>& getViewPort() const _IRR_OVERRIDE_;
 
 		//! draws a vertex primitive list
+		void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
+
+		//! draws a vertex primitive list
 		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indexList, u32 primitiveCount,
 				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,

@@ -20,7 +20,7 @@
 #include "IAttributes.h"
 #include "IMeshCache.h"
 #include "IMeshSceneNode.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 #include "irrMap.h"
 
 #ifdef _DEBUG
@@ -2130,16 +2130,16 @@ void CColladaFileLoader::readPolygonSection(io::IXMLReaderUTF8* reader,
 	{
 		// standard mesh buffer
 
-		scene::SMeshBuffer* mbuffer = new SMeshBuffer();
+		CMeshBuffer<video::S3DVertex>* mbuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
 		buffer = mbuffer;
 
 		core::map<video::S3DVertex, int> vertMap;
 
 		for (u32 i=0; i<polygons.size(); ++i)
 		{
-			core::array<u16> indices;
+			core::array<u32> indices;
 			const u32 vertexCount = polygons[i].Indices.size() / maxOffset;
-			mbuffer->Vertices.reallocate(mbuffer->Vertices.size()+vertexCount);
+			mbuffer->getVertexBuffer()->reallocate(mbuffer->getVertexBuffer()->getVertexCount()+vertexCount);
 
 			// for all index/semantic groups
 			for (u32 v=0; v<polygons[i].Indices.size(); v+=maxOffset)
@@ -2214,9 +2214,9 @@ void CColladaFileLoader::readPolygonSection(io::IXMLReaderUTF8* reader,
 				}
 				else
 				{
-					indices.push_back(mbuffer->getVertexCount());
-					mbuffer->Vertices.push_back(vtx);
-					vertMap.insert(vtx, mbuffer->getVertexCount()-1);
+					indices.push_back(mbuffer->getVertexBuffer()->getVertexCount());
+					mbuffer->getVertexBuffer()->addVertex(&vtx);
+					vertMap.insert(vtx, mbuffer->getVertexBuffer()->getVertexCount()-1);
 				}
 			} // end for all vertices
 
@@ -2230,18 +2230,18 @@ void CColladaFileLoader::readPolygonSection(io::IXMLReaderUTF8* reader,
 				{
 					for (u32 ind = indices.size()-3; ind>0 ; --ind)
 					{
-						mbuffer->Indices.push_back(indices[0]);
-						mbuffer->Indices.push_back(indices[ind+2]);
-						mbuffer->Indices.push_back(indices[ind+1]);
+						mbuffer->getIndexBuffer()->addIndex(indices[0]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+2]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+1]);
 					}
 				}
 				else
 				{
 					for (u32 ind = 0; ind+2 < indices.size(); ++ind)
 					{
-						mbuffer->Indices.push_back(indices[0]);
-						mbuffer->Indices.push_back(indices[ind+1]);
-						mbuffer->Indices.push_back(indices[ind+2]);
+						mbuffer->getIndexBuffer()->addIndex(indices[0]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+1]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+2]);
 					}
 				}
 			}
@@ -2252,15 +2252,15 @@ void CColladaFileLoader::readPolygonSection(io::IXMLReaderUTF8* reader,
 				{
 					if (FlipAxis)
 					{
-						mbuffer->Indices.push_back(indices[ind+2]);
-						mbuffer->Indices.push_back(indices[ind+1]);
-						mbuffer->Indices.push_back(indices[ind+0]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+2]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+1]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+0]);
 					}
 					else
 					{
-						mbuffer->Indices.push_back(indices[ind+0]);
-						mbuffer->Indices.push_back(indices[ind+1]);
-						mbuffer->Indices.push_back(indices[ind+2]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+0]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+1]);
+						mbuffer->getIndexBuffer()->addIndex(indices[ind+2]);
 					}
 				}
 			}
@@ -2271,13 +2271,13 @@ void CColladaFileLoader::readPolygonSection(io::IXMLReaderUTF8* reader,
 	{
 		// lightmap mesh buffer
 
-		scene::SMeshBufferLightMap* mbuffer = new SMeshBufferLightMap();
+		CMeshBuffer<video::S3DVertex2TCoords>* mbuffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
 		buffer = mbuffer;
 
 		for (u32 i=0; i<polygons.size(); ++i)
 		{
 			const u32 vertexCount = polygons[i].Indices.size() / maxOffset;
-			mbuffer->Vertices.reallocate(mbuffer->Vertices.size()+vertexCount);
+			mbuffer->getVertexBuffer()->reallocate(mbuffer->getVertexBuffer()->getVertexCount()+vertexCount);
 			// for all vertices in array
 			for (u32 v=0; v<polygons[i].Indices.size(); v+=maxOffset)
 			{
@@ -2349,17 +2349,17 @@ void CColladaFileLoader::readPolygonSection(io::IXMLReaderUTF8* reader,
 					}
 				}
 
-				mbuffer->Vertices.push_back(vtx);
+				mbuffer->getVertexBuffer()->addVertex(&vtx);
 
 			} // end for all vertices
 
 			// add vertex indices
-			const u32 oldVertexCount = mbuffer->Vertices.size() - vertexCount;
+			const u32 oldVertexCount = mbuffer->getVertexBuffer()->getVertexCount() - vertexCount;
 			for (u32 face=0; face<vertexCount-2; ++face)
 			{
-				mbuffer->Indices.push_back(oldVertexCount + 0);
-				mbuffer->Indices.push_back(oldVertexCount + 1 + face);
-				mbuffer->Indices.push_back(oldVertexCount + 2 + face);
+				mbuffer->getIndexBuffer()->addIndex(oldVertexCount + 0);
+				mbuffer->getIndexBuffer()->addIndex(oldVertexCount + 1 + face);
+				mbuffer->getIndexBuffer()->addIndex(oldVertexCount + 2 + face);
 			}
 
 		} // end for all polygons
@@ -2395,7 +2395,7 @@ void CColladaFileLoader::readPolygonSection(io::IXMLReaderUTF8* reader,
 	// add mesh buffer
 	mesh->addMeshBuffer(buffer);
 	#ifdef COLLADA_READER_DEBUG
-	os::Printer::log("COLLADA added meshbuffer", core::stringc(buffer->getVertexCount())+" vertices, "+core::stringc(buffer->getIndexCount())+" indices.", ELL_DEBUG);
+	os::Printer::log("COLLADA added meshbuffer", core::stringc(buffer->getVertexBuffer()->getVertexCount())+" vertices, "+core::stringc(buffer->getIndexBuffer()->getIndexCount())+" indices.", ELL_DEBUG);
 	#endif
 
 	buffer->drop();

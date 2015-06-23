@@ -37,6 +37,14 @@ bool CPLYMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 	if (!file || !mesh)
 		return false;
 
+	for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+	{
+		u32 Size = mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexSize();
+
+		if(Size != sizeof(video::S3DVertex) && Size != sizeof(video::S3DVertex2TCoords) && Size != sizeof(video::S3DVertexTangents))
+			return false;
+	}
+
 	os::Printer::log("Writing mesh", file->getFileName());
 
 	// write PLY header
@@ -52,8 +60,8 @@ bool CPLYMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 
 	for (u32 i=0; i < mesh->getMeshBufferCount(); ++i)
 	{
-		VertexCount   += mesh->getMeshBuffer(i)->getVertexCount();
-		TriangleCount += mesh->getMeshBuffer(i)->getIndexCount() / 3;
+		VertexCount   += mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount();
+		TriangleCount += mesh->getMeshBuffer(i)->getIndexBuffer()->getIndexCount() / 3;
 	}
 
 	// vertex definition
@@ -98,23 +106,38 @@ bool CPLYMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 	for (u32 i=0; i < mesh->getMeshBufferCount(); ++i)
 	{
 		scene::IMeshBuffer* mb = mesh->getMeshBuffer(i);
-		for (u32 j=0; j < mb->getVertexCount(); ++j)
+		for (u32 j=0; j < mb->getVertexBuffer()->getVertexCount(); ++j)
 		{
-			const core::vector3df& pos = mb->getPosition(j);
-			const core::vector3df& n   = mb->getNormal(j);
+			core::vector3df pos;
+			core::vector3df n;
 //			const core::vector2df& tc  = mb->getTCoords(j);
 
-			u8 *buf  = (u8*)mb->getVertices();
-			switch(mb->getVertexType())
+			u8 *buf  = (u8*)mb->getVertexBuffer()->getVertices();
+			switch(mb->getVertexBuffer()->getVertexSize())
 			{
-			case video::EVT_STANDARD:
-				buf += sizeof(video::S3DVertex)*j;
+			case sizeof(video::S3DVertex):
+				{
+					video::S3DVertex *Vertices  = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
+					pos = Vertices[j].Pos;
+					n = Vertices[j].Normal;
+					buf += sizeof(video::S3DVertex)*j;
+				}
 				break;
-			case video::EVT_2TCOORDS:
-				buf += sizeof(video::S3DVertex2TCoords)*j;
+			case sizeof(video::S3DVertex2TCoords):
+				{
+					video::S3DVertex2TCoords *Vertices  = (video::S3DVertex2TCoords*)mb->getVertexBuffer()->getVertices();
+					pos = Vertices[j].Pos;
+					n = Vertices[j].Normal;
+					buf += sizeof(video::S3DVertex2TCoords)*j;
+				}
 				break;
-			case video::EVT_TANGENTS:
-				buf += sizeof(video::S3DVertexTangents)*j;
+			case sizeof(video::S3DVertexTangents):
+				{
+					video::S3DVertexTangents *Vertices  = (video::S3DVertexTangents*)mb->getVertexBuffer()->getVertices();
+					pos = Vertices[j].Pos;
+					n = Vertices[j].Normal;
+					buf += sizeof(video::S3DVertexTangents)*j;
+				}
 				break;
 			}
 //			video::SColor &col = ( (video::S3DVertex*)buf )->Color;
@@ -139,26 +162,16 @@ bool CPLYMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 	for (u32 i=0; i < mesh->getMeshBufferCount(); ++i)
 	{
 		scene::IMeshBuffer* mb = mesh->getMeshBuffer(i);
-		for (u32 j=0; j < mb->getIndexCount(); j+=3)
+		for (u32 j=0; j < mb->getIndexBuffer()->getIndexCount(); j+=3)
 		{
 			// y and z are flipped so triangles are reversed
 			u32 a=StartOffset;
 			u32 b=StartOffset;
 			u32 c=StartOffset;
 
-			switch(mb->getIndexType())
-			{
-			case video::EIT_16BIT:
-				a += mb->getIndices()[j+0];
-				c += mb->getIndices()[j+1];
-				b += mb->getIndices()[j+2];
-				break;
-			case video::EIT_32BIT:
-				a += ((u32*)mb->getIndices()) [j+0];
-				c += ((u32*)mb->getIndices()) [j+0];
-				b += ((u32*)mb->getIndices()) [j+0];
-				break;
-			}
+			a += mb->getIndexBuffer()->getIndex(j+0);
+			c += mb->getIndexBuffer()->getIndex(j+1);
+			b += mb->getIndexBuffer()->getIndex(j+2);
 
 			// count a b c\n
 			snprintf(outLine, 1024, "3 %u %u %u\n", a, b, c);
@@ -167,7 +180,7 @@ bool CPLYMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 		}
 
 		// increment offset
-		StartOffset += mb->getVertexCount();
+		StartOffset += mb->getVertexBuffer()->getVertexCount();
 	}
 
 	// all done!

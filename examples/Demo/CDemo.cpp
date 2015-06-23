@@ -363,7 +363,7 @@ void CDemo::loadSceneData()
 		for ( i = 0; i != scene::quake3::E_Q3_MESH_SIZE; ++i )
 			sm->getMeshManipulator()->transform(quakeLevelMesh->getMesh(i), m);
 
-		quakeLevelNode = sm->addOctreeSceneNode(
+		quakeLevelNode = sm->addOctreeSceneNode<video::S3DVertex2TCoords>(
 				quakeLevelMesh->getMesh( scene::quake3::E_Q3_MESH_GEOMETRY));
 		if (quakeLevelNode)
 		{

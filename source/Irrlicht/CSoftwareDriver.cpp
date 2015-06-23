@@ -11,6 +11,7 @@
 #include "CBlit.h"
 #include "os.h"
 #include "S3DVertex.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -44,6 +45,7 @@ CSoftwareDriver::CSoftwareDriver(const core::dimension2d<u32>& windowSize, bool 
 	DriverAttributes->setAttribute("MaxTextureSize", 1024);
 	DriverAttributes->setAttribute("Version", 1);
 
+	createVertexDescriptors();
 	// create triangle renderers
 
 	TriangleRenderers[ETR_FLAT] = createTriangleRendererFlat(ZBuffer);
@@ -335,148 +337,152 @@ void CSoftwareDriver::setViewPort(const core::rect<s32>& area)
 }
 
 
-void CSoftwareDriver::drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
-
+void CSoftwareDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 {
-	switch (iType)
+	if (!mb || !mb->isVertexBufferCompatible())
+		return;
+
+	if (!checkPrimitiveCount(mb->getPrimitiveCount()))
+		return;
+
+	if (mb->getVertexBufferCount() > 1)
 	{
-		case (EIT_16BIT):
-		{
-			drawVertexPrimitiveList16(vertices, vertexCount, (const u16*)indexList, primitiveCount, vType, pType);
-			break;
-		}
-		case (EIT_32BIT):
-		{
-			os::Printer::log("Software driver can not render 32bit buffers", ELL_ERROR);
-			break;
-		}
+		os::Printer::log("Software driver can not handle more than one vertex buffer per mesh buffer", ELL_ERROR);
+		return;
 	}
-}
 
+	IVertexDescriptor* descriptor = mb->getVertexDescriptor();
+	scene::IVertexBuffer* vertexBuffer = mb->getVertexBuffer(0);
+	const u32 vertexSize = vertexBuffer->getVertexSize();
 
-//! draws a vertex primitive list
-void CSoftwareDriver::drawVertexPrimitiveList16(const void* vertices, u32 vertexCount, const u16* indexList, u32 primitiveCount, E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType)
-{
-	const u16* indexPointer=0;
-	core::array<u16> newBuffer;
-	switch (pType)
+	scene::IIndexBuffer* indexBuffer = mb->getIndexBuffer();
+	const E_INDEX_TYPE indexType = indexBuffer->getType();
+
+	const u32 primitiveCount = mb->getPrimitiveCount();
+	const scene::E_PRIMITIVE_TYPE primitiveType = mb->getPrimitiveType();
+		
+	if (indexType == EIT_32BIT)
 	{
-		case scene::EPT_LINE_STRIP:
-			{
-				switch (vType)
-				{
-					case EVT_STANDARD:
-						{
-							for (u32 i=0; i < primitiveCount-1; ++i)
-								draw3DLine(((S3DVertex*)vertices)[indexList[i]].Pos,
-									((S3DVertex*)vertices)[indexList[i+1]].Pos,
-									((S3DVertex*)vertices)[indexList[i]].Color);
-						}
-						break;
-					case EVT_2TCOORDS:
-						{
-							for (u32 i=0; i < primitiveCount-1; ++i)
-								draw3DLine(((S3DVertex2TCoords*)vertices)[indexList[i]].Pos,
-									((S3DVertex2TCoords*)vertices)[indexList[i+1]].Pos,
-									((S3DVertex2TCoords*)vertices)[indexList[i]].Color);
-						}
-						break;
-					case EVT_TANGENTS:
-						{
-							for (u32 i=0; i < primitiveCount-1; ++i)
-								draw3DLine(((S3DVertexTangents*)vertices)[indexList[i]].Pos,
-									((S3DVertexTangents*)vertices)[indexList[i+1]].Pos,
-									((S3DVertexTangents*)vertices)[indexList[i]].Color);
-						}
-						break;
-				}
-			}
-			return;
-		case scene::EPT_LINE_LOOP:
-			drawVertexPrimitiveList16(vertices, vertexCount, indexList, primitiveCount-1, vType, scene::EPT_LINE_STRIP);
-			switch (vType)
-			{
-				case EVT_STANDARD:
-					draw3DLine(((S3DVertex*)vertices)[indexList[primitiveCount-1]].Pos,
-						((S3DVertex*)vertices)[indexList[0]].Pos,
-						((S3DVertex*)vertices)[indexList[primitiveCount-1]].Color);
-					break;
-				case EVT_2TCOORDS:
-					draw3DLine(((S3DVertex2TCoords*)vertices)[indexList[primitiveCount-1]].Pos,
-						((S3DVertex2TCoords*)vertices)[indexList[0]].Pos,
-						((S3DVertex2TCoords*)vertices)[indexList[primitiveCount-1]].Color);
-					break;
-				case EVT_TANGENTS:
-					draw3DLine(((S3DVertexTangents*)vertices)[indexList[primitiveCount-1]].Pos,
-						((S3DVertexTangents*)vertices)[indexList[0]].Pos,
-						((S3DVertexTangents*)vertices)[indexList[primitiveCount-1]].Color);
-					break;
-			}
-			return;
-		case scene::EPT_LINES:
-			{
-				switch (vType)
-				{
-					case EVT_STANDARD:
-						{
-							for (u32 i=0; i < 2*primitiveCount; i+=2)
-								draw3DLine(((S3DVertex*)vertices)[indexList[i]].Pos,
-									((S3DVertex*)vertices)[indexList[i+1]].Pos,
-									((S3DVertex*)vertices)[indexList[i]].Color);
-						}
-						break;
-					case EVT_2TCOORDS:
-						{
-							for (u32 i=0; i < 2*primitiveCount; i+=2)
-								draw3DLine(((S3DVertex2TCoords*)vertices)[indexList[i]].Pos,
-									((S3DVertex2TCoords*)vertices)[indexList[i+1]].Pos,
-									((S3DVertex2TCoords*)vertices)[indexList[i]].Color);
-						}
-						break;
-					case EVT_TANGENTS:
-						{
-							for (u32 i=0; i < 2*primitiveCount; i+=2)
-								draw3DLine(((S3DVertexTangents*)vertices)[indexList[i]].Pos,
-									((S3DVertexTangents*)vertices)[indexList[i+1]].Pos,
-									((S3DVertexTangents*)vertices)[indexList[i]].Color);
-						}
-						break;
-				}
-			}
-			return;
-		case scene::EPT_TRIANGLE_FAN:
-			{
-				// TODO: don't convert fan to list
-				newBuffer.reallocate(primitiveCount*3);
-				for( u32 t=0; t<primitiveCount; ++t )
-				{
-					newBuffer.push_back(indexList[0]);
-					newBuffer.push_back(indexList[t+1]);
-					newBuffer.push_back(indexList[t+2]);
-				}
-
-				indexPointer = newBuffer.pointer();
-			}
-			break;
-		case scene::EPT_TRIANGLES:
-			indexPointer=indexList;
-			break;
-		default:
-			return;
+		os::Printer::log("Software driver can not render 32bit buffers", ELL_ERROR);
+		return;
 	}
-	switch (vType)
+
+	video::IVertexAttribute* AttributeP = descriptor->getAttributeBySemantic(video::EVAS_POSITION);
+	video::IVertexAttribute* AttributeC = descriptor->getAttributeBySemantic(video::EVAS_COLOR);
+
+	if (!AttributeP)
+		return;
+
+	scene::CIndexBuffer NewBuffer(EIT_16BIT);
+	scene::IIndexBuffer* IndexPointer = 0;
+
+	u8* vertexData = static_cast<u8*>(vertexBuffer->getVertices());
+
+	u8* OffsetP = vertexData + AttributeP->getOffset();
+	u8* OffsetC = (AttributeC) ? vertexData + AttributeC->getOffset() : 0;
+
+	switch (primitiveType)
 	{
-		case EVT_STANDARD:
-			drawClippedIndexedTriangleListT((S3DVertex*)vertices, vertexCount, indexPointer, primitiveCount);
-			break;
-		case EVT_2TCOORDS:
-			drawClippedIndexedTriangleListT((S3DVertex2TCoords*)vertices, vertexCount, indexPointer, primitiveCount);
-			break;
-		case EVT_TANGENTS:
-			drawClippedIndexedTriangleListT((S3DVertexTangents*)vertices, vertexCount, indexPointer, primitiveCount);
-			break;
+	case scene::EPT_LINE_STRIP:
+		{
+			for (u32 i=0; i < primitiveCount-1; ++i)
+			{
+				core::vector3df* PositionA = (core::vector3df*)OffsetP + vertexSize * indexBuffer->getIndex(i);
+				core::vector3df* PositionB = (core::vector3df*)OffsetP + vertexSize * indexBuffer->getIndex(i + 1);
+
+				if(AttributeC)
+				{
+					SColor* Color = (SColor*)OffsetC + vertexSize * indexBuffer->getIndex(i);
+
+					draw3DLine(*PositionA, *PositionB, *Color);
+				}
+				else
+					draw3DLine(*PositionA, *PositionB);
+			}
+		}
+		return;
+	case scene::EPT_LINE_LOOP:
+		{
+			for (u32 i=0; i < primitiveCount-1; ++i)
+			{
+				core::vector3df* PositionA = (core::vector3df*)OffsetP + vertexSize * indexBuffer->getIndex(i);
+				core::vector3df* PositionB = (core::vector3df*)OffsetP + vertexSize * indexBuffer->getIndex(i + 1);
+
+				if(AttributeC)
+				{
+					SColor* Color = (SColor*)OffsetC + vertexSize * indexBuffer->getIndex(i);
+
+					draw3DLine(*PositionA, *PositionB, *Color);
+				}
+				else
+					draw3DLine(*PositionA, *PositionB);
+			}
+
+			core::vector3df* PositionA = (core::vector3df*)OffsetP + vertexSize * indexBuffer->getIndex(primitiveCount - 1);
+			core::vector3df* PositionB = (core::vector3df*)OffsetP + vertexSize * indexBuffer->getIndex(0);
+
+			if(AttributeC)
+			{
+				SColor* Color = (SColor*)OffsetC + vertexSize * indexBuffer->getIndex(primitiveCount-1);
+
+				draw3DLine(*PositionA, *PositionB, *Color);
+			}
+			else
+				draw3DLine(*PositionA, *PositionB);
+		}
+		return;
+	case scene::EPT_LINES:
+		{
+			for (u32 i=0; i < 2*primitiveCount; i+=2)
+			{
+				core::vector3df* PositionA = (core::vector3df*)OffsetP + vertexSize * indexBuffer->getIndex(i);
+				core::vector3df* PositionB = (core::vector3df*)OffsetP + vertexSize * indexBuffer->getIndex(i + 1);
+
+				if(AttributeC)
+				{
+					SColor* Color = (SColor*)OffsetC + vertexSize * indexBuffer->getIndex(i);
+
+					draw3DLine(*PositionA, *PositionB, *Color);
+				}
+				else
+					draw3DLine(*PositionA, *PositionB);
+			}
+		}
+		return;
+	case scene::EPT_TRIANGLE_FAN:
+		{
+			// TODO: don't convert fan to list
+			NewBuffer.reallocate(primitiveCount*3);
+
+			for(u32 t = 0; t < primitiveCount; ++t)
+			{
+				NewBuffer.addIndex(indexBuffer->getIndex(0));
+				NewBuffer.addIndex(indexBuffer->getIndex(t+1));
+				NewBuffer.addIndex(indexBuffer->getIndex(t+2));
+			}
+
+			IndexPointer = &NewBuffer;
+		}
+		break;
+	case scene::EPT_TRIANGLES:
+		IndexPointer = indexBuffer;
+		break;
+	default:
+		return;
+	}
+
+	// Supported are only built-in Irrlicht vertex formats.
+	switch (vertexSize)
+	{
+	case sizeof(S3DVertex):
+		drawClippedIndexedTriangleListT((S3DVertex*)vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), (u16*)IndexPointer->getIndices(), primitiveCount);
+		break;
+	case sizeof(S3DVertex2TCoords):
+		drawClippedIndexedTriangleListT((S3DVertex2TCoords*)vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), (u16*)IndexPointer->getIndices(), primitiveCount);
+		break;
+	case sizeof(S3DVertexTangents):
+		drawClippedIndexedTriangleListT((S3DVertexTangents*)vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), (u16*)IndexPointer->getIndices(), primitiveCount);
+		break;
 	}
 }
 
@@ -659,14 +665,31 @@ void CSoftwareDriver::drawClippedIndexedTriangleListT(const VERTEXTYPE* vertices
 
 	// draw triangles
 
-	CNullDriver::drawVertexPrimitiveList(clippedVertices.pointer(), clippedVertices.size(),
-		clippedIndices.pointer(), clippedIndices.size()/3, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], EIT_16BIT);
+
+	scene::IVertexBuffer* vtxBuffer = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* idxBuffer = meshBuffer->getIndexBuffer();
+
+	vtxBuffer->reallocate(clippedVertices.size());
+	idxBuffer->reallocate(clippedIndices.size());
+
+	for (u32 i = 0; i < clippedVertices.size(); ++i)
+		vtxBuffer->addVertex(&clippedVertices[i]);
+
+	for (u32 i = 0; i < clippedIndices.size(); ++i)
+		idxBuffer->addIndex(clippedIndices[i]);
+
+	CNullDriver::drawMeshBuffer(meshBuffer);
 
 	if (TransformedPoints.size() < clippedVertices.size())
 		TransformedPoints.set_used(clippedVertices.size());
 
 	if (TransformedPoints.empty())
+	{
+		meshBuffer->drop();
+
 		return;
+	}
 
 	const VERTEXTYPE* currentVertex = clippedVertices.pointer();
 	S2DVertex* tp = &TransformedPoints[0];
@@ -713,6 +736,8 @@ void CSoftwareDriver::drawClippedIndexedTriangleListT(const VERTEXTYPE* vertices
 	// draw all transformed points from the index list
 	CurrentTriangleRenderer->drawIndexedTriangleList(&TransformedPoints[0],
 		clippedVertices.size(), clippedIndices.pointer(), clippedIndices.size()/3);
+
+	meshBuffer->drop();
 }
 
 
@@ -739,7 +764,23 @@ void CSoftwareDriver::draw3DLine(const core::vector3df& start,
 
 	u16 idx[12] = {0,1,2, 0,2,1, 0,1,3, 0,3,1};
 
-	drawIndexedTriangleList(vtx, 4, idx, 4);
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], EIT_16BIT);
+
+	scene::IVertexBuffer* vtxBuffer = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* idxBuffer = meshBuffer->getIndexBuffer();
+
+	vtxBuffer->reallocate(4);
+	idxBuffer->reallocate(12);
+
+	for (u32 i = 0; i < 4; ++i)
+		vtxBuffer->addVertex(&vtx[i]);
+
+	for (u32 i = 0; i < 12; ++i)
+		idxBuffer->addIndex(idx[i]);
+
+	drawMeshBuffer(meshBuffer);
+
+	meshBuffer->drop();
 }
 
 

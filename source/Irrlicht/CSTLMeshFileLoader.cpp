@@ -8,17 +8,23 @@
 
 #include "CSTLMeshFileLoader.h"
 #include "SMesh.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "SAnimatedMesh.h"
 #include "IReadFile.h"
 #include "fast_atof.h"
 #include "coreutil.h"
 #include "os.h"
+#include "IVideoDriver.h"
 
 namespace irr
 {
 namespace scene
 {
+
+//! Constructor
+CSTLMeshFileLoader::CSTLMeshFileLoader(video::IVideoDriver* pDriver) : Driver(pDriver)
+{
+}
 
 
 //! returns true if the file maybe is able to be loaded by this class
@@ -41,7 +47,7 @@ IAnimatedMesh* CSTLMeshFileLoader::createMesh(io::IReadFile* file)
 		return 0;
 
 	SMesh* mesh = new SMesh();
-	SMeshBuffer* meshBuffer = new SMeshBuffer();
+	CMeshBuffer<video::S3DVertex>* meshBuffer = new CMeshBuffer<video::S3DVertex>(Driver->getVertexDescriptor(0));
 	mesh->addMeshBuffer(meshBuffer);
 	meshBuffer->drop();
 
@@ -132,19 +138,26 @@ IAnimatedMesh* CSTLMeshFileLoader::createMesh(io::IReadFile* file)
 #endif
 		}
 
-		SMeshBuffer* mb = reinterpret_cast<SMeshBuffer*>(mesh->getMeshBuffer(mesh->getMeshBufferCount()-1));
-		u32 vCount = mb->getVertexCount();
+		CMeshBuffer<video::S3DVertex>* mb = reinterpret_cast<CMeshBuffer<video::S3DVertex>*>(mesh->getMeshBuffer(mesh->getMeshBufferCount()-1));
+		u32 vCount = mb->getVertexBuffer()->getVertexCount();
 		video::SColor color(0xffffffff);
 		if (attrib & 0x8000)
 			color = video::A1R5G5B5toA8R8G8B8(attrib);
 		if (normal==core::vector3df())
 			normal=core::plane3df(vertex[2],vertex[1],vertex[0]).Normal;
-		mb->Vertices.push_back(video::S3DVertex(vertex[2],normal,color, core::vector2df()));
-		mb->Vertices.push_back(video::S3DVertex(vertex[1],normal,color, core::vector2df()));
-		mb->Vertices.push_back(video::S3DVertex(vertex[0],normal,color, core::vector2df()));
-		mb->Indices.push_back(vCount);
-		mb->Indices.push_back(vCount+1);
-		mb->Indices.push_back(vCount+2);
+
+		video::S3DVertex vtx(vertex[2],normal,color, core::vector2df());
+		mb->getVertexBuffer()->addVertex(&vtx);
+
+		vtx = video::S3DVertex(vertex[1],normal,color, core::vector2df());
+		mb->getVertexBuffer()->addVertex(&vtx);
+
+		vtx = video::S3DVertex(vertex[0],normal,color, core::vector2df());
+		mb->getVertexBuffer()->addVertex(&vtx);
+
+		mb->getIndexBuffer()->addIndex(vCount);
+		mb->getIndexBuffer()->addIndex(vCount+1);
+		mb->getIndexBuffer()->addIndex(vCount+2);
 	}	// end while (file->getPos() < filesize)
 	mesh->getMeshBuffer(0)->recalculateBoundingBox();
 

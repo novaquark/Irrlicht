@@ -210,7 +210,7 @@ public:
 			u16 y1 = y0 + sw;
 			if (y1 >= Height)
 				y1 = Height - 1; // the last one might be narrower
-			addstrip(hm, cf, y0, y1, i);
+			addstrip(hm, cf, y0, y1, i, driver);
 			++i;
 		}
 		if (i<Mesh->getMeshBufferCount())
@@ -232,22 +232,22 @@ public:
 	// indices for values of y between y0 and y1, and add it to the
 	// mesh.
 
-	void addstrip(const HeightMap &hm, colour_func cf, u16 y0, u16 y1, u32 bufNum)
+	void addstrip(const HeightMap &hm, colour_func cf, u16 y0, u16 y1, u32 bufNum, video::IVideoDriver* driver)
 	{
-		SMeshBuffer *buf = 0;
+		CMeshBuffer<video::S3DVertex> *buf = 0;
 		if (bufNum<Mesh->getMeshBufferCount())
 		{
-			buf = (SMeshBuffer*)Mesh->getMeshBuffer(bufNum);
+			buf = (CMeshBuffer<video::S3DVertex>*)Mesh->getMeshBuffer(bufNum);
 		}
 		else
 		{
 			// create new buffer
-			buf = new SMeshBuffer();
+			buf = new CMeshBuffer<video::S3DVertex>(driver->getVertexDescriptor(0));
 			Mesh->addMeshBuffer(buf);
 			// to simplify things we drop here but continue using buf
 			buf->drop();
 		}
-		buf->Vertices.set_used((1 + y1 - y0) * Width);
+		buf->getVertexBuffer()->set_used((1 + y1 - y0) * Width);
 
 		u32 i=0;
 		for (u16 y = y0; y <= y1; ++y)
@@ -258,7 +258,7 @@ public:
 				const f32 xx = (f32)x/(f32)Width;
 				const f32 yy = (f32)y/(f32)Height;
 
-				S3DVertex& v = buf->Vertices[i++];
+				S3DVertex& v = ((S3DVertex*)buf->getVertexBuffer()->getVertices())[i++];
 				v.Pos.set(x, Scale * z, y);
 				v.Normal.set(hm.getnormal(x, y, Scale));
 				v.Color=cf(xx, yy, z);
@@ -266,19 +266,19 @@ public:
 			}
 		}
 
-		buf->Indices.set_used(6 * (Width - 1) * (y1 - y0));
+		buf->getIndexBuffer()->set_used(6 * (Width - 1) * (y1 - y0));
 		i=0;
 		for(u16 y = y0; y < y1; ++y)
 		{
 			for(u16 x = 0; x < Width - 1; ++x)
 			{
 				const u16 n = (y-y0) * Width + x;
-				buf->Indices[i]=n;
-				buf->Indices[++i]=n + Width;
-				buf->Indices[++i]=n + Width + 1;
-				buf->Indices[++i]=n + Width + 1;
-				buf->Indices[++i]=n + 1;
-				buf->Indices[++i]=n;
+				buf->getIndexBuffer()->setIndex(i, n);
+				buf->getIndexBuffer()->setIndex(++i, n + Width);
+				buf->getIndexBuffer()->setIndex(++i, n + Width + 1);
+				buf->getIndexBuffer()->setIndex(++i, n + Width + 1);
+				buf->getIndexBuffer()->setIndex(++i, n + 1);
+				buf->getIndexBuffer()->setIndex(++i, n);
 				++i;
 			}
 		}

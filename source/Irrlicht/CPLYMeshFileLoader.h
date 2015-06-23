@@ -7,7 +7,7 @@
 
 #include "IMeshLoader.h"
 #include "ISceneManager.h"
-#include "CDynamicMeshBuffer.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -123,8 +123,8 @@ private:
 	void fillBuffer();
 	E_PLY_PROPERTY_TYPE getPropertyType(const c8* typeString) const;
 
-	bool readVertex(const SPLYElement &Element, scene::CDynamicMeshBuffer* mb);
-	bool readFace(const SPLYElement &Element, scene::CDynamicMeshBuffer* mb);
+	bool readVertex(const SPLYElement &Element, scene::IMeshBuffer* mb);
+	bool readFace(const SPLYElement &Element, scene::IMeshBuffer* mb);
 	void skipElement(const SPLYElement &Element);
 	void skipProperty(const SPLYProperty &Property);
 	f32 getFloat(E_PLY_PROPERTY_TYPE t);

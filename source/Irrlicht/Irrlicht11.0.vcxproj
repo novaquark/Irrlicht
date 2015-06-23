@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="11.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -278,14 +278,14 @@
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|x64'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|x64'" />
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IncludePath);$(DXSDK_DIR)include;$(CG_INC_PATH)</IncludePath>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IncludePath);$(CG_INC_PATH);$(DXSDK_DIR)Include</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IncludePath);;$(DXSDK_DIR)Include</IncludePath>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj\$(Configuration)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">obj\$(Configuration)64\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IncludePath);$(CG_INC_PATH);$(DXSDK_DIR)include</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|Win32'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|x64'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='SDL-Debug|Win32'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
@@ -296,22 +296,24 @@
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release - Fast FPU|x64'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|Win32'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|x64'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(LibraryPath);$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH)</LibraryPath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(LibraryPath);$(CG_LIB_PATH);$(DXSDK_DIR)Lib\x86</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(LibraryPath);$(CG_LIB_PATH);$(DXSDK_DIR)Lib\x86</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='SDL-Debug|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Static lib - Debug|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release - Fast FPU|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(DXSDK_DIR)Lib\x64;$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64</LibraryPath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64;$(DXSDK_DIR)Lib\x64</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|x64'">$(DXSDK_DIR)Lib\x64;$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64</LibraryPath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(DXSDK_DIR)Lib\x64;$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64</LibraryPath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64;$(DXSDK_DIR)Lib\x64</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='SDL-Debug|x64'">$(DXSDK_DIR)Lib\x64;$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Static lib - Debug|x64'">$(DXSDK_DIR)Lib\x64;$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release - Fast FPU|x64'">$(DXSDK_DIR)Lib\x64;$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|x64'">$(DXSDK_DIR)Lib\x64;$(LibraryPath);$(VSInstallDir);$(VSInstallDir)lib\amd64</LibraryPath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -331,6 +333,7 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -351,6 +354,13 @@
       <ImportLibrary>..\..\lib\Win32-visualstudio\Irrlicht.lib</ImportLibrary>
       <Version>1.9</Version>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
@@ -370,6 +380,7 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -388,6 +399,13 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\Win64-visualstudio\Irrlicht.lib</ImportLibrary>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -412,6 +430,7 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -428,6 +447,13 @@
       <ImportLibrary>..\..\lib\Win32-visualstudio\Irrlicht.lib</ImportLibrary>
       <Version>1.9</Version>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -451,6 +477,7 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -465,6 +492,13 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\Win64-visualstudio\Irrlicht.lib</ImportLibrary>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|Win32'">
     <Midl>
@@ -494,6 +528,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>
       </DebugInformationFormat>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -512,6 +547,13 @@
       <SubSystem>Windows</SubSystem>
       <Version>1.9</Version>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|x64'">
     <Midl>
@@ -556,6 +598,13 @@
       <ImportLibrary>..\..\lib\Win64-visualstudio\Irrlicht.lib</ImportLibrary>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Debug|Win32'">
     <Midl>
@@ -576,6 +625,7 @@
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -585,6 +635,13 @@
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\lib\Win32-visualstudio\Irrlicht.lib</OutputFile>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Debug|x64'">
     <Midl>
@@ -614,6 +671,13 @@
       <OutputFile>..\..\lib\Win64-visualstudio\Irrlicht.lib</OutputFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|Win32'">
     <Midl>
@@ -639,6 +703,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>
       </DebugInformationFormat>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -648,6 +713,13 @@
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\lib\Win32-visualstudio\Irrlicht.lib</OutputFile>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|x64'">
     <Midl>
@@ -682,6 +754,13 @@
       <OutputFile>..\..\lib\Win64-visualstudio\Irrlicht.lib</OutputFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Release - Fast FPU|Win32'">
     <Midl>
@@ -711,6 +790,7 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <CallingConvention>FastCall</CallingConvention>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -721,6 +801,13 @@
       <OutputFile>..\..\lib\Win32-visualstudio\Irrlicht.lib</OutputFile>
       <TargetMachine>MachineX86</TargetMachine>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Release - Fast FPU|x64'">
     <Midl>
@@ -759,6 +846,13 @@
       <OutputFile>..\..\lib\Win64-visualstudio\Irrlicht.lib</OutputFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SDL-Debug|Win32'">
     <Midl>
@@ -779,6 +873,7 @@
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -799,6 +894,13 @@
       <ImportLibrary>..\..\lib\Win32-visualstudio\Irrlicht.lib</ImportLibrary>
       <Version>1.9</Version>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SDL-Debug|x64'">
     <Midl>
@@ -836,20 +938,30 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\Win64-visualstudio\Irrlicht.lib</ImportLibrary>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\EDriverFeatures.h" />
     <ClInclude Include="..\..\include\EMaterialFlags.h" />
     <ClInclude Include="..\..\include\IAnimatedMeshMD3.h" />
     <ClInclude Include="..\..\include\IEventReceiver.h" />
-	<ClInclude Include="..\..\include\IProfiler.h" />
+    <ClInclude Include="..\..\include\IHardwareBuffer.h" />
+    <ClInclude Include="..\..\include\IInstancedMeshSceneNode.h" />
+    <ClInclude Include="..\..\include\IProfiler.h" />
     <ClInclude Include="..\..\include\ILogger.h" />
     <ClInclude Include="..\..\include\IOSOperator.h" />
     <ClInclude Include="..\..\include\IRandomizer.h" />
     <ClInclude Include="..\..\include\IReferenceCounted.h" />
     <ClInclude Include="..\..\include\IrrCompileConfig.h" />
     <ClInclude Include="..\..\include\irrlicht.h" />
-	<ClInclude Include="..\..\include\leakHunter.h" />
+    <ClInclude Include="..\..\include\IVertexDescriptor.h" />
+    <ClInclude Include="..\..\include\leakHunter.h" />
     <ClInclude Include="..\..\include\IrrlichtDevice.h" />
     <ClInclude Include="..\..\include\irrTypes.h" />
     <ClInclude Include="..\..\include\ITimer.h" />
@@ -904,7 +1016,6 @@
     <ClInclude Include="..\..\include\IXMLReader.h" />
     <ClInclude Include="..\..\include\IXMLWriter.h" />
     <ClInclude Include="..\..\include\path.h" />
-    <ClInclude Include="..\..\include\CDynamicMeshBuffer.h" />
     <ClInclude Include="..\..\include\CIndexBuffer.h" />
     <ClInclude Include="..\..\include\CMeshBuffer.h" />
     <ClInclude Include="..\..\include\CVertexBuffer.h" />
@@ -927,7 +1038,7 @@
     <ClInclude Include="..\..\include\IMeshLoader.h" />
     <ClInclude Include="..\..\include\IMeshManipulator.h" />
     <ClInclude Include="..\..\include\IMeshSceneNode.h" />
-	<ClInclude Include="..\..\include\IMeshTextureLoader.h" />
+    <ClInclude Include="..\..\include\IMeshTextureLoader.h" />
     <ClInclude Include="..\..\include\IMeshWriter.h" />
     <ClInclude Include="..\..\include\IMetaTriangleSelector.h" />
     <ClInclude Include="..\..\include\IParticleAffector.h" />
@@ -964,16 +1075,12 @@
     <ClInclude Include="..\..\include\SAnimatedMesh.h" />
     <ClInclude Include="..\..\include\SceneParameters.h" />
     <ClInclude Include="..\..\include\SMesh.h" />
-    <ClInclude Include="..\..\include\SMeshBuffer.h" />
-    <ClInclude Include="..\..\include\SMeshBufferLightMap.h" />
-    <ClInclude Include="..\..\include\SMeshBufferTangents.h" />
     <ClInclude Include="..\..\include\SParticle.h" />
-    <ClInclude Include="..\..\include\SSkinMeshBuffer.h" />
     <ClInclude Include="..\..\include\SViewFrustum.h" />
     <ClInclude Include="..\..\include\EGUIAlignment.h" />
     <ClInclude Include="..\..\include\EGUIElementTypes.h" />
     <ClInclude Include="..\..\include\EMessageBoxFlags.h" />
-	<ClInclude Include="..\..\include\EFocusFlags.h" />
+    <ClInclude Include="..\..\include\EFocusFlags.h" />
     <ClInclude Include="..\..\include\ICursorControl.h" />
     <ClInclude Include="..\..\include\IGUIButton.h" />
     <ClInclude Include="..\..\include\IGUICheckbox.h" />
@@ -990,7 +1097,7 @@
     <ClInclude Include="..\..\include\IGUIInOutFader.h" />
     <ClInclude Include="..\..\include\IGUIListBox.h" />
     <ClInclude Include="..\..\include\IGUIMeshViewer.h" />
-	<ClInclude Include="..\..\include\IGUIProfiler.h" />
+    <ClInclude Include="..\..\include\IGUIProfiler.h" />
     <ClInclude Include="..\..\include\IGUIScrollBar.h" />
     <ClInclude Include="..\..\include\IGUISkin.h" />
     <ClInclude Include="..\..\include\IGUISpinBox.h" />
@@ -1001,14 +1108,25 @@
     <ClInclude Include="..\..\include\IGUITreeView.h" />
     <ClInclude Include="..\..\include\IGUIWindow.h" />
     <ClInclude Include="CCgMaterialRenderer.h" />
+    <ClInclude Include="CD3D11CallBridge.h" />
+    <ClInclude Include="CD3D11Driver.h" />
+    <ClInclude Include="CD3D11FixedPipelineRenderer.h" />
+    <ClInclude Include="CD3D11HardwareBuffer.h" />
+    <ClInclude Include="CD3D11MaterialRenderer.h" />
+    <ClInclude Include="CD3D11NormalMapRenderer.h" />
+    <ClInclude Include="CD3D11ParallaxMapRenderer.h" />
+    <ClInclude Include="CD3D11Texture.h" />
+    <ClInclude Include="CD3D11VertexDescriptor.h" />
     <ClInclude Include="CD3D9CgMaterialRenderer.h" />
     <ClInclude Include="CDefaultSceneNodeAnimatorFactory.h" />
     <ClInclude Include="CDefaultSceneNodeFactory.h" />
     <ClInclude Include="CGeometryCreator.h" />
+    <ClInclude Include="CInstancedMeshSceneNode.h" />
     <ClInclude Include="CMeshCache.h" />
     <ClInclude Include="CMeshManipulator.h" />
     <ClInclude Include="COpenGLCgMaterialRenderer.h" />
     <ClInclude Include="CSceneManager.h" />
+    <ClInclude Include="CVertexDescriptor.h" />
     <ClInclude Include="Octree.h" />
     <ClInclude Include="CSMFMeshFileLoader.h" />
     <ClInclude Include="C3DSMeshFileLoader.h" />
@@ -1025,7 +1143,7 @@
     <ClInclude Include="CLWOMeshFileLoader.h" />
     <ClInclude Include="CMD2MeshFileLoader.h" />
     <ClInclude Include="CMD3MeshFileLoader.h" />
-	<ClInclude Include="CMeshTextureLoader.h" />
+    <ClInclude Include="CMeshTextureLoader.h" />
     <ClInclude Include="CMS3DMeshFileLoader.h" />
     <ClInclude Include="CMY3DHelper.h" />
     <ClInclude Include="CMY3DMeshFileLoader.h" />
@@ -1158,8 +1276,8 @@
     <ClInclude Include="COSOperator.h" />
     <ClInclude Include="CTimer.h" />
     <ClInclude Include="os.h" />
-	<ClInclude Include="CProfiler.h" />
-	<ClInclude Include="EProfileIDs.h" />
+    <ClInclude Include="CProfiler.h" />
+    <ClInclude Include="EProfileIDs.h" />
     <ClInclude Include="lzma\LzmaDec.h" />
     <ClInclude Include="lzma\Types.h" />
     <ClInclude Include="zlib\crc32.h" />
@@ -1238,7 +1356,7 @@
     <ClInclude Include="CGUIMessageBox.h" />
     <ClInclude Include="CGUIModalScreen.h" />
     <ClInclude Include="CGUIProfiler.h" />
-	<ClInclude Include="CGUIScrollBar.h" />
+    <ClInclude Include="CGUIScrollBar.h" />
     <ClInclude Include="CGUISkin.h" />
     <ClInclude Include="CGUISpinBox.h" />
     <ClInclude Include="CGUISpriteBank.h" />
@@ -1255,10 +1373,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CCgMaterialRenderer.cpp" />
+    <ClCompile Include="CD3D11CallBridge.cpp" />
+    <ClCompile Include="CD3D11Driver.cpp" />
+    <ClCompile Include="CD3D11FixedPipelineRenderer.cpp" />
+    <ClCompile Include="CD3D11HardwareBuffer.cpp" />
+    <ClCompile Include="CD3D11MaterialRenderer.cpp" />
+    <ClCompile Include="CD3D11NormalMapRenderer.cpp" />
+    <ClCompile Include="CD3D11ParallaxMapRenderer.cpp" />
+    <ClCompile Include="CD3D11Texture.cpp" />
+    <ClCompile Include="CD3D11VertexDescriptor.cpp" />
     <ClCompile Include="CD3D9CgMaterialRenderer.cpp" />
     <ClCompile Include="CDefaultSceneNodeAnimatorFactory.cpp" />
     <ClCompile Include="CDefaultSceneNodeFactory.cpp" />
     <ClCompile Include="CGeometryCreator.cpp" />
+    <ClCompile Include="CInstancedMeshSceneNode.cpp" />
     <ClCompile Include="CMeshCache.cpp" />
     <ClCompile Include="CMeshManipulator.cpp" />
     <ClCompile Include="COpenGLCgMaterialRenderer.cpp" />
@@ -1278,7 +1406,7 @@
     <ClCompile Include="CLWOMeshFileLoader.cpp" />
     <ClCompile Include="CMD2MeshFileLoader.cpp" />
     <ClCompile Include="CMD3MeshFileLoader.cpp" />
-	<ClCompile Include="CMeshTextureLoader.cpp" />
+    <ClCompile Include="CMeshTextureLoader.cpp" />
     <ClCompile Include="CMS3DMeshFileLoader.cpp" />
     <ClCompile Include="CMY3DMeshFileLoader.cpp" />
     <ClCompile Include="COBJMeshFileLoader.cpp" />
@@ -1288,6 +1416,7 @@
     <ClCompile Include="CQ3LevelMesh.cpp" />
     <ClCompile Include="CSkinnedMesh.cpp" />
     <ClCompile Include="CSTLMeshFileLoader.cpp" />
+    <ClCompile Include="CVertexDescriptor.cpp" />
     <ClCompile Include="CXMeshFileLoader.cpp" />
     <ClCompile Include="CAnimatedMeshSceneNode.cpp" />
     <ClCompile Include="CBillboardSceneNode.cpp" />
@@ -1425,8 +1554,8 @@
     <ClCompile Include="Irrlicht.cpp" />
     <ClCompile Include="os.cpp" />
     <ClCompile Include="utf8.cpp" />
-	<ClCompile Include="CProfiler.cpp" />
-	<ClCompile Include="leakHunter.cpp" />
+    <ClCompile Include="CProfiler.cpp" />
+    <ClCompile Include="leakHunter.cpp" />
     <ClCompile Include="lzma\LzmaDec.c" />
     <ClCompile Include="zlib\adler32.c" />
     <ClCompile Include="zlib\compress.c" />
@@ -1557,7 +1686,7 @@
     <ClCompile Include="CGUIMessageBox.cpp" />
     <ClCompile Include="CGUIModalScreen.cpp" />
     <ClCompile Include="CGUIProfiler.cpp" />
-	<ClCompile Include="CGUIScrollBar.cpp" />
+    <ClCompile Include="CGUIScrollBar.cpp" />
     <ClCompile Include="CGUISkin.cpp" />
     <ClCompile Include="CGUISpinBox.cpp" />
     <ClCompile Include="CGUISpriteBank.cpp" />

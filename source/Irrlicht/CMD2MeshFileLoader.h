@@ -9,6 +9,10 @@
 
 namespace irr
 {
+namespace video
+{
+	class IVideoDriver;
+}
 namespace scene
 {
 
@@ -20,7 +24,7 @@ class CMD2MeshFileLoader : public IMeshLoader
 public:
 
 	//! Constructor
-	CMD2MeshFileLoader();
+	CMD2MeshFileLoader(video::IVideoDriver* pDriver);
 
 	//! returns true if the file maybe is able to be loaded by this class
 	//! based on the file extension (e.g. ".bsp")
@@ -36,6 +40,7 @@ private:
 	//! Loads the file data into the mesh
 	bool loadFile(io::IReadFile* file, CAnimatedMeshMD2* mesh);
 
+	video::IVideoDriver* Driver;
 };
 
 } // end namespace scene

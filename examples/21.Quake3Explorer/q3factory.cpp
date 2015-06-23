@@ -377,7 +377,27 @@ void Q3ShaderFactory (	Q3LevelLoadParameter &loadParam,
 			if ( mat.getTexture( 1 ) == 0 )
 				mat.setTexture ( 1, driver->getTexture ( "$redimage" ) );
 
-			IMesh * store = smgr->getMeshManipulator ()->createMeshWith2TCoords ( m );
+			IMesh * store = 0;
+
+			switch(m->getMeshBuffer(0)->getVertexBuffer()->getVertexSize())
+			{
+			case sizeof(video::S3DVertex):
+				store = smgr->getMeshManipulator ()->createMeshCopy<video::S3DVertex>(m, driver->getVertexDescriptor(0));
+				break;
+			case sizeof(video::S3DVertex2TCoords):
+				store = smgr->getMeshManipulator ()->createMeshCopy<video::S3DVertex2TCoords>(m, driver->getVertexDescriptor(1));
+				break;
+			case sizeof(video::S3DVertexTangents):
+				store = smgr->getMeshManipulator ()->createMeshCopy<video::S3DVertexTangents>(m, driver->getVertexDescriptor(2));
+				break;
+			}
+
+			if(store)
+			{
+				for(u32 l = 0; l < store->getMeshBufferCount(); ++l)
+					smgr->getMeshManipulator()->convertVertices<video::S3DVertexTangents>(store->getMeshBuffer(l), driver->getVertexDescriptor(1), false);
+			}
+
 			m->drop();
 
 			node = smgr->addMeshSceneNode ( store,  parent, sceneNodeID );

@@ -20,6 +20,8 @@
 #include "EDriverFeatures.h"
 #include "SExposedVideoData.h"
 
+#include "IHardwareBuffer.h"
+
 namespace irr
 {
 namespace io
@@ -39,6 +41,7 @@ namespace scene
 
 namespace video
 {
+	class IVertexDescriptor;
 	struct S3DVertex;
 	struct S3DVertex2TCoords;
 	struct S3DVertexTangents;
@@ -77,6 +80,104 @@ namespace video
 #if _IRR_MATERIAL_MAX_TEXTURES_>7
 		//! Texture transformation
 		ETS_TEXTURE_7,
+#if _IRR_MATERIAL_MAX_TEXTURES_>8
+		//! Texture transformation
+		ETS_TEXTURE_8,
+#if _IRR_MATERIAL_MAX_TEXTURES_>9
+		//! Texture transformation
+		ETS_TEXTURE_9,
+#if _IRR_MATERIAL_MAX_TEXTURES_>10
+		//! Texture transformation
+		ETS_TEXTURE_10,
+#if _IRR_MATERIAL_MAX_TEXTURES_>11
+		//! Texture transformation
+		ETS_TEXTURE_11,
+#if _IRR_MATERIAL_MAX_TEXTURES_>12
+		//! Texture transformation
+		ETS_TEXTURE_12,
+#if _IRR_MATERIAL_MAX_TEXTURES_>13
+		//! Texture transformation
+		ETS_TEXTURE_13,
+#if _IRR_MATERIAL_MAX_TEXTURES_>14
+		//! Texture transformation
+		ETS_TEXTURE_14,
+#if _IRR_MATERIAL_MAX_TEXTURES_>15
+		//! Texture transformation
+		ETS_TEXTURE_15,
+#if _IRR_MATERIAL_MAX_TEXTURES_>16
+		//! Texture transformation
+		ETS_TEXTURE_16,
+#if _IRR_MATERIAL_MAX_TEXTURES_>17
+		//! Texture transformation
+		ETS_TEXTURE_17,
+#if _IRR_MATERIAL_MAX_TEXTURES_>18
+		//! Texture transformation
+		ETS_TEXTURE_18,
+#if _IRR_MATERIAL_MAX_TEXTURES_>19
+		//! Texture transformation
+		ETS_TEXTURE_19,
+#if _IRR_MATERIAL_MAX_TEXTURES_>20
+		//! Texture transformation
+		ETS_TEXTURE_20,
+#if _IRR_MATERIAL_MAX_TEXTURES_>21
+		//! Texture transformation
+		ETS_TEXTURE_21,
+#if _IRR_MATERIAL_MAX_TEXTURES_>22
+		//! Texture transformation
+		ETS_TEXTURE_22,
+#if _IRR_MATERIAL_MAX_TEXTURES_>23
+		//! Texture transformation
+		ETS_TEXTURE_23,
+#if _IRR_MATERIAL_MAX_TEXTURES_>24
+		//! Texture transformation
+		ETS_TEXTURE_24,
+#if _IRR_MATERIAL_MAX_TEXTURES_>25
+		//! Texture transformation
+		ETS_TEXTURE_25,
+#if _IRR_MATERIAL_MAX_TEXTURES_>26
+		//! Texture transformation
+		ETS_TEXTURE_26,
+#if _IRR_MATERIAL_MAX_TEXTURES_>27
+		//! Texture transformation
+		ETS_TEXTURE_27,
+#if _IRR_MATERIAL_MAX_TEXTURES_>28
+		//! Texture transformation
+		ETS_TEXTURE_28,
+#if _IRR_MATERIAL_MAX_TEXTURES_>29
+		//! Texture transformation
+		ETS_TEXTURE_29,
+#if _IRR_MATERIAL_MAX_TEXTURES_>30
+		//! Texture transformation
+		ETS_TEXTURE_30,
+#if _IRR_MATERIAL_MAX_TEXTURES_>31
+		//! Texture transformation
+		ETS_TEXTURE_31,
+
+
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif
@@ -461,11 +562,9 @@ namespace video
 		0 or another texture first. */
 		virtual void removeAllTextures() =0;
 
-		//! Remove hardware buffer
-		virtual void removeHardwareBuffer(const scene::IMeshBuffer* mb) =0;
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer) = 0;
 
-		//! Remove all hardware buffers
-		virtual void removeAllHardwareBuffers() =0;
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer) = 0;
 
 		//! Create occlusion query.
 		/** Use node for identification and mesh for occlusion test. */
@@ -639,27 +738,6 @@ namespace video
 		/** \return Rectangle of the current viewport. */
 		virtual const core::rect<s32>& getViewPort() const =0;
 
-		//! Draws a vertex primitive list
-		/** Note that, depending on the index type, some vertices might be not
-		accessible through the index list. The limit is at 65535 vertices for 16bit
-		indices. Please note that currently not all primitives are available for
-		all drivers, and some might be emulated via triangle renders.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices. These define the vertices used
-		for each primitive. Depending on the pType, indices are interpreted as single
-		objects (for point like primitives), pairs (for lines), triplets (for
-		triangles), or quads.
-		\param primCount Amount of Primitives
-		\param vType Vertex type, e.g. video::EVT_STANDARD for S3DVertex.
-		\param pType Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
-		\param iType Index type, e.g. video::EIT_16BIT for 16bit indices. */
-		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primCount,
-				E_VERTEX_TYPE vType=EVT_STANDARD,
-				scene::E_PRIMITIVE_TYPE pType=scene::EPT_TRIANGLES,
-				E_INDEX_TYPE iType=EIT_16BIT) =0;
-
 		//! Draws a vertex primitive list in 2d
 		/** Compared to the general (3d) version of this method, this
 		one sets up a 2d render mode, and uses only x and y of vectors.
@@ -672,109 +750,19 @@ namespace video
 		\param vertices Pointer to array of vertices.
 		\param vertexCount Amount of vertices in the array.
 		\param indexList Pointer to array of indices. These define the
-		vertices used for each primitive. Depending on the pType,
+		vertices used for each primitive. Depending on the type,
 		indices are interpreted as single objects (for point like
 		primitives), pairs (for lines), triplets (for triangles), or
 		quads.
 		\param primCount Amount of Primitives
 		\param vType Vertex type, e.g. video::EVT_STANDARD for S3DVertex.
-		\param pType Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
+		\param type Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
 		\param iType Index type, e.g. video::EIT_16BIT for 16bit indices. */
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indexList, u32 primCount,
 				E_VERTEX_TYPE vType=EVT_STANDARD,
 				scene::E_PRIMITIVE_TYPE pType=scene::EPT_TRIANGLES,
 				E_INDEX_TYPE iType=EIT_16BIT) =0;
-
-		//! Draws an indexed triangle list.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices / 3. */
-		void drawIndexedTriangleList(const S3DVertex* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle list.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices / 3. */
-		void drawIndexedTriangleList(const S3DVertex2TCoords* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_2TCOORDS, scene::EPT_TRIANGLES, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle list.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices / 3. */
-		void drawIndexedTriangleList(const S3DVertexTangents* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_TANGENTS, scene::EPT_TRIANGLES, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle fan.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices - 2. */
-		void drawIndexedTriangleFan(const S3DVertex* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_STANDARD, scene::EPT_TRIANGLE_FAN, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle fan.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices - 2. */
-		void drawIndexedTriangleFan(const S3DVertex2TCoords* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_2TCOORDS, scene::EPT_TRIANGLE_FAN, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle fan.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices - 2. */
-		void drawIndexedTriangleFan(const S3DVertexTangents* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_TANGENTS, scene::EPT_TRIANGLE_FAN, EIT_16BIT);
-		}
 
 		//! Draws a 3d line.
 		/** For some implementations, this method simply calls
@@ -1483,6 +1471,14 @@ namespace video
 		*/
 		virtual void convertColor(const void* sP, ECOLOR_FORMAT sF, s32 sN,
 				void* dP, ECOLOR_FORMAT dF) const =0;
+
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName) = 0;
+
+		virtual IVertexDescriptor* getVertexDescriptor(u32 id) const = 0;
+
+		virtual IVertexDescriptor* getVertexDescriptor(const core::stringc& pName) const = 0;
+
+		virtual u32 getVertexDescriptorCount() const = 0;
 	};
 
 } // end namespace video

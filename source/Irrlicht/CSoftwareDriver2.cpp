@@ -365,6 +365,8 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	DriverAttributes->setAttribute("MaxTextureLODBias", 16.f);
 	DriverAttributes->setAttribute("Version", 47);
 
+	createVertexDescriptors();
+
 	// create triangle renderers
 
 	irr::memset32 ( BurningShader, 0, sizeof ( BurningShader ) );
@@ -1712,18 +1714,6 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 			VertexCache.indexCount = primitiveCount + 2;
 			VertexCache.primitivePitch = 1;
 			break;
-		case scene::EPT_QUAD_STRIP:
-			VertexCache.indexCount = 2*primitiveCount + 2;
-			VertexCache.primitivePitch = 2;
-			break;
-		case scene::EPT_QUADS:
-			VertexCache.indexCount = 4*primitiveCount;
-			VertexCache.primitivePitch = 4;
-			break;
-		case scene::EPT_POLYGON:
-			VertexCache.indexCount = primitiveCount+1;
-			VertexCache.primitivePitch = 1;
-			break;
 		case scene::EPT_POINT_SPRITES:
 			VertexCache.indexCount = primitiveCount;
 			VertexCache.primitivePitch = 1;
@@ -1731,6 +1721,47 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 	}
 
 	irr::memset32 ( VertexCache.info, VERTEXCACHE_MISS, sizeof ( VertexCache.info ) );
+}
+
+
+void CBurningVideoDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
+{
+	if (!mb || !mb->isVertexBufferCompatible())
+		return;
+
+	if (!checkPrimitiveCount(mb->getPrimitiveCount()))
+		return;
+
+	if (mb->getVertexBufferCount() > 1)
+	{
+		os::Printer::log("Software driver can not handle more than one vertex buffer per mesh buffer", ELL_ERROR);
+		return;
+	}
+
+	scene::IVertexBuffer* vertexBuffer = mb->getVertexBuffer(0);
+	E_VERTEX_TYPE vertexType = EVT_STANDARD;
+
+	scene::IIndexBuffer* indexBuffer = mb->getIndexBuffer();
+	const u32 primitiveCount = mb->getPrimitiveCount();
+	const scene::E_PRIMITIVE_TYPE primitiveType = mb->getPrimitiveType();
+
+	// Supported are only built-in Irrlicht vertex formats.
+	switch(vertexBuffer->getVertexSize())
+	{
+	case sizeof(S3DVertex):
+		vertexType = EVT_STANDARD;
+		break;
+	case sizeof(S3DVertex2TCoords):
+		vertexType = EVT_2TCOORDS;
+		break;
+	case sizeof(S3DVertexTangents):
+		vertexType = EVT_TANGENTS;
+		break;
+	default:
+		return;
+	}
+
+	drawVertexPrimitiveList(vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), indexBuffer->getIndices(), primitiveCount, vertexType, primitiveType, indexBuffer->getType());
 }
 
 
@@ -1742,18 +1773,22 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	if (!checkPrimitiveCount(primitiveCount))
 		return;
 
-	CNullDriver::drawVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType);
+	// Emulate CNullDriver::drawVertexPrimitiveList call.
+	if((iType == EIT_16BIT) && (vertexCount > 65536))
+		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
 
 	// These calls would lead to crashes due to wrong index usage.
 	// The vertex cache needs to be rewritten for these primitives.
 	if (pType==scene::EPT_POINTS || pType==scene::EPT_LINE_STRIP ||
 		pType==scene::EPT_LINE_LOOP || pType==scene::EPT_LINES ||
-		pType==scene::EPT_TRIANGLE_FAN || pType==scene::EPT_POLYGON ||
+		pType==scene::EPT_TRIANGLE_FAN ||
 		pType==scene::EPT_POINT_SPRITES)
 		return;
 
 	if ( 0 == CurrentShader )
 		return;
+		
+	PrimitivesDrawn += primitiveCount;
 
 	VertexCache_reset ( vertices, vertexCount, indexList, primitiveCount, vType, pType, iType );
 

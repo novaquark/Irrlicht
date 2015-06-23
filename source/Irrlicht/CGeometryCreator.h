@@ -6,10 +6,15 @@
 #define __C_GEOMETRY_CREATOR_H_INCLUDED__
 
 #include "IGeometryCreator.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
+
+namespace video
+{
+	class IVideoDriver;
+}
 
 namespace scene
 {
@@ -17,8 +22,14 @@ namespace scene
 //! class for creating geometry on the fly
 class CGeometryCreator : public IGeometryCreator
 {
-	void addToBuffer(const video::S3DVertex& v, SMeshBuffer* Buffer) const;
+	void addToBuffer(const video::S3DVertex& v, IMeshBuffer* Buffer) const;
+
+	video::IVideoDriver* Driver;
 public:
+	CGeometryCreator(video::IVideoDriver* driver) : Driver(driver)
+	{
+	}
+
 	IMesh* createCubeMesh(const core::vector3df& size) const;
 
 	IMesh* createHillPlaneMesh(

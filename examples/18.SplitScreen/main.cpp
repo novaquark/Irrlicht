@@ -113,7 +113,7 @@ int main()
 	IAnimatedMesh *map = smgr->getMesh("20kdm2.bsp");
 	if (map)
 	{
-		ISceneNode *map_node = smgr->addOctreeSceneNode(map->getMesh(0));
+		ISceneNode *map_node = smgr->addOctreeSceneNode<video::S3DVertex2TCoords>(map->getMesh(0));
 		//Set position
 		map_node->setPosition(vector3df(-850,-220,-850));
 	}

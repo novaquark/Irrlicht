@@ -15,6 +15,10 @@
 
 namespace irr
 {
+namespace video
+{
+	class IVideoDriver;
+}
 namespace scene
 {
 
@@ -23,7 +27,7 @@ namespace scene
 	public:
 
 		//! constructor
-		CAnimatedMeshMD2();
+		CAnimatedMeshMD2(video::IVideoDriver* pDriver);
 
 		//! destructor
 		virtual ~CAnimatedMeshMD2();
@@ -100,7 +104,7 @@ namespace scene
 		//
 
 		//! the buffer that contains the most recent animation
-		SMeshBuffer* InterpolationBuffer;
+		CMeshBuffer<video::S3DVertex>* InterpolationBuffer;
 
 		//! named animations
 		struct SAnimationData

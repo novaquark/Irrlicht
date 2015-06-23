@@ -8,11 +8,13 @@
 #include "CPLYMeshFileLoader.h"
 #include "IMeshManipulator.h"
 #include "SMesh.h"
-#include "CDynamicMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "SAnimatedMesh.h"
 #include "IReadFile.h"
 #include "fast_atof.h"
 #include "os.h"
+#include "ISceneManager.h"
+#include "IVideoDriver.h"
 
 namespace irr
 {
@@ -230,9 +232,9 @@ IAnimatedMesh* CPLYMeshFileLoader::createMesh(io::IReadFile* file)
 		if (continueReading)
 		{
 			// create a mesh buffer
-			CDynamicMeshBuffer *mb = new CDynamicMeshBuffer(video::EVT_STANDARD, vertCount > 65565 ? video::EIT_32BIT : video::EIT_16BIT);
-			mb->getVertexBuffer().reallocate(vertCount);
-			mb->getIndexBuffer().reallocate(vertCount);
+			CMeshBuffer<video::S3DVertex> *mb = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0), vertCount > 65565 ? video::EIT_32BIT : video::EIT_16BIT);
+			mb->getVertexBuffer()->reallocate(vertCount);
+			mb->getIndexBuffer()->reallocate(vertCount);
 			mb->setHardwareMappingHint(EHM_STATIC);
 
 			bool hasNormals=true;
@@ -285,7 +287,7 @@ IAnimatedMesh* CPLYMeshFileLoader::createMesh(io::IReadFile* file)
 }
 
 
-bool CPLYMeshFileLoader::readVertex(const SPLYElement &Element, scene::CDynamicMeshBuffer* mb)
+bool CPLYMeshFileLoader::readVertex(const SPLYElement &Element, scene::IMeshBuffer* mb)
 {
 	if (!IsBinaryFile)
 		getNextLine();
@@ -352,13 +354,13 @@ bool CPLYMeshFileLoader::readVertex(const SPLYElement &Element, scene::CDynamicM
 			skipProperty(Element.Properties[i]);
 	}
 
-	mb->getVertexBuffer().push_back(vert);
+	mb->getVertexBuffer()->addVertex(&vert);
 
 	return result;
 }
 
 
-bool CPLYMeshFileLoader::readFace(const SPLYElement &Element, scene::CDynamicMeshBuffer* mb)
+bool CPLYMeshFileLoader::readFace(const SPLYElement &Element, scene::IMeshBuffer* mb)
 {
 	if (!IsBinaryFile)
 		getNextLine();
@@ -375,17 +377,17 @@ bool CPLYMeshFileLoader::readFace(const SPLYElement &Element, scene::CDynamicMes
 				c = getInt(Element.Properties[i].Data.List.ItemType);
 			s32 j = 3;
 
-			mb->getIndexBuffer().push_back(a);
-			mb->getIndexBuffer().push_back(c);
-			mb->getIndexBuffer().push_back(b);
+			mb->getIndexBuffer()->addIndex(a);
+			mb->getIndexBuffer()->addIndex(c);
+			mb->getIndexBuffer()->addIndex(b);
 
 			for (; j < count; ++j)
 			{
 				b = c;
 				c = getInt(Element.Properties[i].Data.List.ItemType);
-				mb->getIndexBuffer().push_back(a);
-				mb->getIndexBuffer().push_back(c);
-				mb->getIndexBuffer().push_back(b);
+				mb->getIndexBuffer()->addIndex(a);
+				mb->getIndexBuffer()->addIndex(c);
+				mb->getIndexBuffer()->addIndex(b);
 			}
 		}
 		else if (Element.Properties[i].Name == "intensity")

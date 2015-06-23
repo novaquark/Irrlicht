@@ -8,7 +8,7 @@
 #include "CQ3LevelMesh.h"
 #include "ISceneManager.h"
 #include "os.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 #include "irrString.h"
 #include "ILightSceneNode.h"
 #include "IQ3Shader.h"
@@ -918,7 +918,7 @@ scene::SMesh** CQ3LevelMesh::buildMesh(s32 num)
 
 		for ( u32 g = 0; g != itemSize; ++g )
 		{
-			scene::SMeshBufferLightMap* buffer = 0;
+			scene::CMeshBuffer<video::S3DVertex2TCoords>* buffer = 0;
 
 			if ( item[g].index == E_Q3_MESH_GEOMETRY )
 			{
@@ -948,14 +948,14 @@ scene::SMesh** CQ3LevelMesh::buildMesh(s32 num)
 				if ( LoadParam.mergeShaderBuffer == 1 )
 				{
 					// combine
-					buffer = (SMeshBufferLightMap*) newmesh[ item[g].index ]->getMeshBuffer(
+					buffer = (CMeshBuffer<video::S3DVertex2TCoords>*) newmesh[ item[g].index ]->getMeshBuffer(
 						item[g].index != E_Q3_MESH_FOG ? material : material2 );
 				}
 
 				// create a seperate mesh buffer
 				if ( 0 == buffer )
 				{
-					buffer = new scene::SMeshBufferLightMap();
+					buffer = new scene::CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
 					newmesh[ item[g].index ]->addMeshBuffer( buffer );
 					buffer->drop();
 					buffer->getMaterial() = item[g].index != E_Q3_MESH_FOG ? material : material2;
@@ -979,41 +979,41 @@ scene::SMesh** CQ3LevelMesh::buildMesh(s32 num)
 				case 1: // normal polygons
 				case 3: // mesh vertices
 					index = MeshVerts + face->meshVertIndex;
-					k = buffer->getVertexCount();
+					k = buffer->getVertexBuffer()->getVertexCount();
 
 					// reallocate better if many small meshes are used
-					s = buffer->getIndexCount()+face->numMeshVerts;
-					if ( buffer->Indices.allocated_size () < (u32) s )
+					s = buffer->getIndexBuffer()->getIndexCount()+face->numMeshVerts;
+					if ( buffer->getIndexBuffer()->allocated_size () < (u32) s )
 					{
-						if (	buffer->Indices.allocated_size () > 0 &&
+						if (	buffer->getIndexBuffer()->allocated_size () > 0 &&
 								face->numMeshVerts < 20 && NumFaces > 1000
 							)
 						{
-							s = buffer->getIndexCount() + (NumFaces >> 3 * face->numMeshVerts );
+							s = buffer->getIndexBuffer()->getIndexCount() + (NumFaces >> 3 * face->numMeshVerts );
 						}
-						buffer->Indices.reallocate( s);
+						buffer->getIndexBuffer()->reallocate( s);
 					}
 
 					for ( j = 0; j < face->numMeshVerts; ++j )
 					{
-						buffer->Indices.push_back( k + index [j] );
+						buffer->getIndexBuffer()->addIndex( k + index [j] );
 					}
 
 					s = k+face->numOfVerts;
-					if ( buffer->Vertices.allocated_size () < (u32) s )
+					if ( buffer->getVertexBuffer()->allocated_size () < (u32) s )
 					{
-						if (	buffer->Indices.allocated_size () > 0 &&
+						if (	buffer->getIndexBuffer()->allocated_size () > 0 &&
 								face->numOfVerts < 20 && NumFaces > 1000
 							)
 						{
-							s = buffer->getIndexCount() + (NumFaces >> 3 * face->numOfVerts );
+							s = buffer->getIndexBuffer()->getIndexCount() + (NumFaces >> 3 * face->numOfVerts );
 						}
-						buffer->Vertices.reallocate( s);
+						buffer->getVertexBuffer()->reallocate( s);
 					}
 					for ( j = 0; j != face->numOfVerts; ++j )
 					{
 						copy( &temp[0], &Vertices[ j + face->vertexIndex ], item[g].takeVertexColor );
-						buffer->Vertices.push_back( temp[0] );
+						buffer->getVertexBuffer()->addVertex( &temp[0] );
 					}
 					break;
 
@@ -1234,8 +1234,8 @@ void CQ3LevelMesh::SBezier::tesselate( s32 level )
 		column[2][j] = control[2].getInterpolated_quadratic(control[5], control[8], f );
 	}
 
-	const u32 idx = Patch->Vertices.size();
-	Patch->Vertices.reallocate(idx+level*level);
+	const u32 idx = Patch->getVertexBuffer()->getVertexCount();
+	Patch->getVertexBuffer()->reallocate(idx+level*level);
 	//Tesselate across the rows to get final vertices
 	video::S3DVertex2TCoords v;
 	S3DVertex2TCoords_64 f;
@@ -1245,11 +1245,11 @@ void CQ3LevelMesh::SBezier::tesselate( s32 level )
 		{
 			f = column[0][j].getInterpolated_quadratic(column[1][j], column[2][j], w * (f64) k);
 			f.copy( v );
-			Patch->Vertices.push_back( v );
+			Patch->getVertexBuffer()->addVertex( &v );
 		}
 	}
 
-	Patch->Indices.reallocate(Patch->Indices.size()+6*level*level);
+	Patch->getIndexBuffer()->reallocate(Patch->getIndexBuffer()->getIndexCount()+6*level*level);
 	// connect
 	for( j = 0; j < level; ++j)
 	{
@@ -1257,13 +1257,13 @@ void CQ3LevelMesh::SBezier::tesselate( s32 level )
 		{
 			const s32 inx = idx + ( k * ( level + 1 ) ) + j;
 
-			Patch->Indices.push_back( inx + 0 );
-			Patch->Indices.push_back( inx + (level + 1 ) + 0 );
-			Patch->Indices.push_back( inx + (level + 1 ) + 1 );
+			Patch->getIndexBuffer()->addIndex( inx + 0 );
+			Patch->getIndexBuffer()->addIndex( inx + (level + 1 ) + 0 );
+			Patch->getIndexBuffer()->addIndex( inx + (level + 1 ) + 1 );
 
-			Patch->Indices.push_back( inx + 0 );
-			Patch->Indices.push_back( inx + (level + 1 ) + 1 );
-			Patch->Indices.push_back( inx + 1 );
+			Patch->getIndexBuffer()->addIndex( inx + 0 );
+			Patch->getIndexBuffer()->addIndex( inx + (level + 1 ) + 1 );
+			Patch->getIndexBuffer()->addIndex( inx + 1 );
 		}
 	}
 }
@@ -1272,7 +1272,7 @@ void CQ3LevelMesh::SBezier::tesselate( s32 level )
 /*!
 	no subdivision
 */
-void CQ3LevelMesh::createCurvedSurface_nosubdivision(SMeshBufferLightMap* meshBuffer,
+void CQ3LevelMesh::createCurvedSurface_nosubdivision(CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer,
 					s32 faceIndex,
 					s32 patchTesselation,
 					s32 storevertexcolor)
@@ -1288,26 +1288,26 @@ void CQ3LevelMesh::createCurvedSurface_nosubdivision(SMeshBufferLightMap* meshBu
 
 	video::S3DVertex2TCoords v;
 
-	m = meshBuffer->Vertices.size();
-	meshBuffer->Vertices.reallocate(m+controlHeight * controlWidth);
+	m = meshBuffer->getVertexBuffer()->getVertexCount();
+	meshBuffer->getVertexBuffer()->reallocate(m+controlHeight * controlWidth);
 	for ( j = 0; j!= controlHeight * controlWidth; ++j )
 	{
 		copy( &v, &Vertices [ face->vertexIndex + j ], storevertexcolor );
-		meshBuffer->Vertices.push_back( v );
+		meshBuffer->getVertexBuffer()->addVertex( &v );
 	}
 
-	meshBuffer->Indices.reallocate(meshBuffer->Indices.size()+6*(controlHeight-1) * (controlWidth-1));
+	meshBuffer->getIndexBuffer()->reallocate(meshBuffer->getIndexBuffer()->getIndexCount()+6*(controlHeight-1) * (controlWidth-1));
 	for ( j = 0; j!= controlHeight - 1; ++j )
 	{
 		for ( k = 0; k!= controlWidth - 1; ++k )
 		{
-			meshBuffer->Indices.push_back( m + k + 0 );
-			meshBuffer->Indices.push_back( m + k + controlWidth + 0 );
-			meshBuffer->Indices.push_back( m + k + controlWidth + 1 );
+			meshBuffer->getIndexBuffer()->addIndex( m + k + 0 );
+			meshBuffer->getIndexBuffer()->addIndex( m + k + controlWidth + 0 );
+			meshBuffer->getIndexBuffer()->addIndex( m + k + controlWidth + 1 );
 
-			meshBuffer->Indices.push_back( m + k + 0 );
-			meshBuffer->Indices.push_back( m + k + controlWidth + 1 );
-			meshBuffer->Indices.push_back( m + k + 1 );
+			meshBuffer->getIndexBuffer()->addIndex( m + k + 0 );
+			meshBuffer->getIndexBuffer()->addIndex( m + k + controlWidth + 1 );
+			meshBuffer->getIndexBuffer()->addIndex( m + k + 1 );
 		}
 		m += controlWidth;
 	}
@@ -1316,7 +1316,7 @@ void CQ3LevelMesh::createCurvedSurface_nosubdivision(SMeshBufferLightMap* meshBu
 
 /*!
 */
-void CQ3LevelMesh::createCurvedSurface_bezier(SMeshBufferLightMap* meshBuffer,
+void CQ3LevelMesh::createCurvedSurface_bezier(CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer,
 					s32 faceIndex,
 					s32 patchTesselation,
 					s32 storevertexcolor)
@@ -1351,7 +1351,7 @@ void CQ3LevelMesh::createCurvedSurface_bezier(SMeshBufferLightMap* meshBuffer,
 	}
 
 	// create a temporary patch
-	Bezier.Patch = new scene::SMeshBufferLightMap();
+	Bezier.Patch = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
 
 	//Loop through the biquadratic patches
 	for( j = 0; j < biquadHeight; ++j)
@@ -1378,8 +1378,8 @@ void CQ3LevelMesh::createCurvedSurface_bezier(SMeshBufferLightMap* meshBuffer,
 
 	// stitch together with existing geometry
 	// TODO: only border needs to be checked
-	const u32 bsize = Bezier.Patch->getVertexCount();
-	const u32 msize = meshBuffer->getVertexCount();
+	const u32 bsize = Bezier.Patch->getVertexBuffer()->getVertexCount();
+	const u32 msize = meshBuffer->getVertexBuffer()->getVertexCount();
 /*
 	for ( j = 0; j!= bsize; ++j )
 	{
@@ -1399,17 +1399,17 @@ void CQ3LevelMesh::createCurvedSurface_bezier(SMeshBufferLightMap* meshBuffer,
 */
 
 	// add Patch to meshbuffer
-	meshBuffer->Vertices.reallocate(msize+bsize);
+	meshBuffer->getVertexBuffer()->reallocate(msize+bsize);
 	for ( j = 0; j!= bsize; ++j )
 	{
-		meshBuffer->Vertices.push_back( Bezier.Patch->Vertices[j] );
+		((CVertexBuffer<video::S3DVertex2TCoords>*)meshBuffer->getVertexBuffer())->addVertex( ((CVertexBuffer<video::S3DVertex2TCoords>*)Bezier.Patch->getVertexBuffer())->getVertex(j) );
 	}
 
 	// add indices to meshbuffer
-	meshBuffer->Indices.reallocate(meshBuffer->getIndexCount()+Bezier.Patch->getIndexCount());
-	for ( j = 0; j!= Bezier.Patch->getIndexCount(); ++j )
+	meshBuffer->getIndexBuffer()->reallocate(meshBuffer->getIndexBuffer()->getIndexCount()+Bezier.Patch->getIndexBuffer()->getIndexCount());
+	for ( j = 0; j!= Bezier.Patch->getIndexBuffer()->getIndexCount(); ++j )
 	{
-		meshBuffer->Indices.push_back( msize + Bezier.Patch->Indices[j] );
+		meshBuffer->getIndexBuffer()->addIndex( msize + Bezier.Patch->getIndexBuffer()->getIndex(j) );
 	}
 
 	delete Bezier.Patch;
@@ -1821,7 +1821,7 @@ void CQ3LevelMesh::cleanMesh(SMesh *m, const bool texture0important)
 
 		b = m->MeshBuffers[i];
 
-		if ( b->getVertexCount() == 0 || b->getIndexCount() == 0 ||
+		if ( b->getVertexBuffer()->getVertexCount() == 0 || b->getIndexBuffer()->getIndexCount() == 0 ||
 			( texture0important && b->getMaterial().getTexture(0) == 0 )
 			)
 		{
@@ -1898,7 +1898,7 @@ void CQ3LevelMesh::calcBoundingBoxes()
 	{
 		for ( u32 j=0; j < Mesh[g]->MeshBuffers.size(); ++j)
 		{
-			((SMeshBufferLightMap*)Mesh[g]->MeshBuffers[j])->recalculateBoundingBox();
+			((CMeshBuffer<video::S3DVertex2TCoords>*)Mesh[g]->MeshBuffers[j])->recalculateBoundingBox();
 		}
 
 		Mesh[g]->recalculateBoundingBox();
@@ -1911,7 +1911,7 @@ void CQ3LevelMesh::calcBoundingBoxes()
 	{
 		for ( u32 j=0; j < BrushEntities[g]->MeshBuffers.size(); ++j)
 		{
-			((SMeshBufferLightMap*)BrushEntities[g]->MeshBuffers[j])->
+			((CMeshBuffer<video::S3DVertex2TCoords>*)BrushEntities[g]->MeshBuffers[j])->
 				recalculateBoundingBox();
 		}
 

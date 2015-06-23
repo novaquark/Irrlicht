@@ -13,7 +13,7 @@ and an additional file to be able to ask the user for a driver type using the
 console.
 */
 #include <irrlicht.h>
-#include <iostream>
+#include "driverChoice.h"
 
 /*
 As already written in the HelloWorld example, in the Irrlicht Engine everything
@@ -47,33 +47,12 @@ int main()
 	which video driver to use. The Software device might be
 	too slow to draw a huge Quake 3 map, but just for the fun of it, we make
 	this decision possible, too.
-	Instead of copying this whole code into your app, you can simply include
-	driverChoice.h from Irrlicht's include directory. The function
-	driverChoiceConsole does exactly the same.
 	*/
 
 	// ask user for driver
-
-	video::E_DRIVER_TYPE driverType;
-
-	printf("Please select the driver you want for this example:\n"\
-		" (a) OpenGL 1.5\n (b) Direct3D 9.0c\n (c) Direct3D 8.1\n"\
-		" (d) Burning's Software Renderer\n (e) Software Renderer\n"\
-		" (f) NullDevice\n (otherKey) exit\n\n");
-
-	char i;
-	std::cin >> i;
-
-	switch(i)
-	{
-		case 'a': driverType = video::EDT_OPENGL;   break;
-		case 'b': driverType = video::EDT_DIRECT3D9;break;
-		case 'c': driverType = video::EDT_DIRECT3D8;break;
-		case 'd': driverType = video::EDT_BURNINGSVIDEO;break;
-		case 'e': driverType = video::EDT_SOFTWARE; break;
-		case 'f': driverType = video::EDT_NULL;     break;
-		default: return 1;
-	}
+	video::E_DRIVER_TYPE driverType = driverChoiceConsole();
+	if (driverType == video::EDT_COUNT)
+		return 1;
 
 	// create device and exit if creation failed
 
@@ -124,7 +103,7 @@ int main()
 	scene::ISceneNode* node = 0;
 
 	if (mesh)
-		node = smgr->addOctreeSceneNode(mesh->getMesh(0), 0, -1, 1024);
+		node = smgr->addOctreeSceneNode<video::S3DVertex2TCoords>(mesh->getMesh(0), 0, -1, 1024);
 //		node = smgr->addMeshSceneNode(mesh->getMesh(0));
 
 	/*

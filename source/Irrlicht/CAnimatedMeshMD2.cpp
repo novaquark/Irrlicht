@@ -8,6 +8,7 @@
 #include "CAnimatedMeshMD2.h"
 #include "SColor.h"
 #include "irrMath.h"
+#include "IVideoDriver.h"
 
 namespace irr
 {
@@ -218,14 +219,14 @@ static const SMD2AnimationType MD2AnimationTypeList[21] =
 
 
 //! constructor
-CAnimatedMeshMD2::CAnimatedMeshMD2()
+CAnimatedMeshMD2::CAnimatedMeshMD2(video::IVideoDriver* pDriver)
 	: InterpolationBuffer(0), FrameList(0), FrameCount(0), FramesPerSecond((f32)(MD2AnimationTypeList[0].fps << MD2_FRAME_SHIFT))
 {
 	#ifdef _DEBUG
 	IAnimatedMesh::setDebugName("CAnimatedMeshMD2 IAnimatedMesh");
 	IMesh::setDebugName("CAnimatedMeshMD2 IMesh");
 	#endif
-	InterpolationBuffer = new SMeshBuffer;
+	InterpolationBuffer = new CMeshBuffer<video::S3DVertex>(pDriver->getVertexDescriptor(0));
 }
 
 
@@ -282,7 +283,7 @@ IMeshBuffer* CAnimatedMeshMD2::getMeshBuffer(u32 nr) const
 //! Returns pointer to a mesh buffer which fits a material
 IMeshBuffer* CAnimatedMeshMD2::getMeshBuffer(const video::SMaterial &material) const
 {
-	if (InterpolationBuffer->Material == material)
+	if (InterpolationBuffer->getMaterial() == material)
 		return InterpolationBuffer;
 	else
 		return 0;
@@ -320,7 +321,7 @@ void CAnimatedMeshMD2::updateInterpolationBuffer(s32 frame, s32 startFrameLoop, 
 		div = frame * MD2_FRAME_SHIFT_RECIPROCAL;
 	}
 
-	video::S3DVertex* target = static_cast<video::S3DVertex*>(InterpolationBuffer->getVertices());
+	video::S3DVertex* target = static_cast<video::S3DVertex*>(InterpolationBuffer->getVertexBuffer()->getVertices());
 	SMD2Vert* first = FrameList[firstFrame].pointer();
 	SMD2Vert* second = FrameList[secondFrame].pointer();
 
@@ -350,7 +351,7 @@ void CAnimatedMeshMD2::updateInterpolationBuffer(s32 frame, s32 startFrameLoop, 
 	}
 
 	//update bounding box
-	InterpolationBuffer->setBoundingBox(BoxList[secondFrame].getInterpolated(BoxList[firstFrame], div));
+	InterpolationBuffer->getBoundingBox() = BoxList[secondFrame].getInterpolated(BoxList[firstFrame], div);
 	InterpolationBuffer->setDirty();
 }
 
@@ -358,7 +359,7 @@ void CAnimatedMeshMD2::updateInterpolationBuffer(s32 frame, s32 startFrameLoop, 
 //! sets a flag of all contained materials to a new value
 void CAnimatedMeshMD2::setMaterialFlag(video::E_MATERIAL_FLAG flag, bool newvalue)
 {
-	InterpolationBuffer->Material.setFlag(flag, newvalue);
+	InterpolationBuffer->getMaterial().setFlag(flag, newvalue);
 }
 
 
@@ -380,14 +381,14 @@ void CAnimatedMeshMD2::setDirty(E_BUFFER_TYPE buffer)
 //! returns an axis aligned bounding box
 const core::aabbox3d<f32>& CAnimatedMeshMD2::getBoundingBox() const
 {
-	return InterpolationBuffer->BoundingBox;
+	return InterpolationBuffer->getBoundingBox();
 }
 
 
 //! set user axis aligned bounding box
 void CAnimatedMeshMD2::setBoundingBox(const core::aabbox3df& box)
 {
-	InterpolationBuffer->BoundingBox = box;
+	InterpolationBuffer->getBoundingBox() = box;
 }
 
 

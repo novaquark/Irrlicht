@@ -31,7 +31,11 @@ int main(int argc, char* argv[])
 #ifndef _IRR_WINDOWS_
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
 #else
+#if defined (_IRR_COMPILE_WITH_DIRECT3D_11_)
+	video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D11;
+#else
 	video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D9;
+#endif
 #endif
 
 	CMainMenu menu;

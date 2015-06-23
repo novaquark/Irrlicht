@@ -63,12 +63,25 @@ s32 CParticleMeshEmitter::emitt(u32 now, u32 timeSinceLastCall, SParticle*& outA
 			{
 				for( u32 j=0; j<Mesh->getMeshBufferCount(); ++j )
 				{
-					for( u32 k=0; k<Mesh->getMeshBuffer(j)->getVertexCount(); ++k )
+					video::IVertexAttribute* attributePosition = Mesh->getMeshBuffer(j)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+					video::IVertexAttribute* attributeNormal = Mesh->getMeshBuffer(j)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
+
+					if(!attributePosition || !attributeNormal)
+						continue;
+
+					u8* Vertices = static_cast<u8*>(Mesh->getMeshBuffer(j)->getVertexBuffer()->getVertices());
+
+					u8* offsetPosition = Vertices + attributePosition->getOffset();
+					u8* offsetNormal = Vertices + attributeNormal->getOffset();
+
+					for( u32 k=0; k<Mesh->getMeshBuffer(j)->getVertexBuffer()->getVertexCount(); ++k )
 					{
-						p.pos = Mesh->getMeshBuffer(j)->getPosition(k);
+						core::vector3df* position = (core::vector3df*)offsetPosition;
+						core::vector3df* normal = (core::vector3df*)offsetNormal;
+
+						p.pos = *position;
 						if( UseNormalDirection )
-							p.vector = Mesh->getMeshBuffer(j)->getNormal(k) /
-								NormalDirectionModifier;
+							p.vector = *normal / NormalDirectionModifier;
 						else
 							p.vector = Direction;
 
@@ -102,6 +115,9 @@ s32 CParticleMeshEmitter::emitt(u32 now, u32 timeSinceLastCall, SParticle*& outA
 						p.size = p.startSize;
 
 						Particles.push_back(p);
+
+						offsetPosition += Mesh->getMeshBuffer(j)->getVertexBuffer()->getVertexSize();
+						offsetNormal += Mesh->getMeshBuffer(j)->getVertexBuffer()->getVertexSize();
 					}
 				}
 			}
@@ -109,15 +125,27 @@ s32 CParticleMeshEmitter::emitt(u32 now, u32 timeSinceLastCall, SParticle*& outA
 			{
 				const s32 randomMB = (MBNumber < 0) ? (os::Randomizer::rand() % MBCount) : MBNumber;
 
-				u32 vertexNumber = Mesh->getMeshBuffer(randomMB)->getVertexCount();
-				if (!vertexNumber)
+				u32 vertexNumber = Mesh->getMeshBuffer(randomMB)->getVertexBuffer()->getVertexCount();
+				
+				video::IVertexAttribute* attributePosition = Mesh->getMeshBuffer(randomMB)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+				video::IVertexAttribute* attributeNormal = Mesh->getMeshBuffer(randomMB)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
+
+				if(!attributePosition || !attributeNormal || !vertexNumber)
 					continue;
+
+				u8* Vertices = static_cast<u8*>(Mesh->getMeshBuffer(randomMB)->getVertexBuffer()->getVertices());
+
 				vertexNumber = os::Randomizer::rand() % vertexNumber;
 
-				p.pos = Mesh->getMeshBuffer(randomMB)->getPosition(vertexNumber);
+				u8* offsetPosition = Vertices + attributePosition->getOffset() + Mesh->getMeshBuffer(randomMB)->getVertexBuffer()->getVertexSize() * vertexNumber;
+				u8* offsetNormal = Vertices + attributeNormal->getOffset() + Mesh->getMeshBuffer(randomMB)->getVertexBuffer()->getVertexSize() * vertexNumber;
+
+				core::vector3df* position = (core::vector3df*)offsetPosition;
+				core::vector3df* normal = (core::vector3df*)offsetNormal;
+
+				p.pos = *position;
 				if( UseNormalDirection )
-					p.vector = Mesh->getMeshBuffer(randomMB)->getNormal(vertexNumber) /
-							NormalDirectionModifier;
+					p.vector = *normal / NormalDirectionModifier;
 				else
 					p.vector = Direction;
 
@@ -179,8 +207,8 @@ void CParticleMeshEmitter::setMesh(IMesh* mesh)
 	VertexPerMeshBufferList.reallocate(MBCount);
 	for( u32 i = 0; i < MBCount; ++i )
 	{
-		VertexPerMeshBufferList.push_back( Mesh->getMeshBuffer(i)->getVertexCount() );
-		TotalVertices += Mesh->getMeshBuffer(i)->getVertexCount();
+		VertexPerMeshBufferList.push_back( Mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount() );
+		TotalVertices += Mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount();
 	}
 }
 

@@ -10,6 +10,9 @@ struct IDirect3D9;
 struct IDirect3DDevice9;
 struct IDirect3D8;
 struct IDirect3DDevice8;
+struct ID3D11Device;
+struct ID3D10Device;
+struct IDXGISwapChain;
 
 namespace irr
 {
@@ -82,6 +85,19 @@ struct SExposedVideoData
 		SD3D8 D3D8;
 		SOpenGLWin32 OpenGLWin32;
 		SOpenGLLinux OpenGLLinux;
+
+		struct
+		{
+			//! Pointer to the ID3D11Device interface
+			ID3D11Device* D3DDev11;
+
+			//! Pointer to the IDirect3D9 interface
+			IDXGISwapChain* SwapChain;
+
+			//! Window handle.
+			/** Get with for example HWND h = reinterpret_cast<HWND>(exposedData.D3D9.HWnd) */
+			void* HWnd;
+		} D3D11;
 	};
 };
 

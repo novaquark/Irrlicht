@@ -33,12 +33,80 @@ namespace irr
 
 namespace video
 {
-	class COpenGLCallBridge;
+	class COpenGLDriver;
+    class COpenGLCallBridge;
 	class COpenGLTexture;
+
+	class COpenGLVertexAttribute : public CVertexAttribute
+	{
+	public:
+		COpenGLVertexAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 offset, u32 bufferID, u32 layerCount);
+		virtual ~COpenGLVertexAttribute();
+
+		// Add location layer.
+		void addLocationLayer();
+
+		// Get attribute location in a shader program.
+		s32 getLocation(u32 materialType) const;
+
+		// Set attribute location in a shader program.
+		void setLocation(u32 location, u32 materialType);
+
+		// -1 -> location entry doesn't exist, eg. material type or id is wrong; 0 - location isn't cached, so use glGetAttribLocation call; 1 - location is cached.
+		s32 getLocationStatus(u32 materialType) const;
+
+	protected:
+		core::array<bool> Cache;
+		core::array<s32> Location;
+	};
+
+	class COpenGLVertexDescriptor : public CVertexDescriptor
+	{
+	public:
+		COpenGLVertexDescriptor(const core::stringc& name, u32 id, u32 layerCount);
+		virtual ~COpenGLVertexDescriptor();
+
+		void addLocationLayer();
+
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID);
+
+		COpenGLVertexAttribute* getAttributeSorted(u32 id) const;
+
+		virtual bool removeAttribute(u32 id);
+
+		virtual void removeAllAttribute();
+
+	protected:
+		u32 LayerCount;
+
+		core::array<COpenGLVertexAttribute*> AttributeSorted;
+	};
+
+	class COpenGLHardwareBuffer : public IHardwareBuffer
+	{
+	public:
+		COpenGLHardwareBuffer(scene::IIndexBuffer* indexBuffer, COpenGLDriver* driver);
+		COpenGLHardwareBuffer(scene::IVertexBuffer* vertexBuffer, COpenGLDriver* driver);
+		~COpenGLHardwareBuffer();
+
+		bool update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data);
+
+		inline GLuint getBufferID() const;
+		inline void removeFromArray(bool status);
+	
+	private:
+		COpenGLDriver* Driver;
+
+		GLuint BufferID;
+		bool RemoveFromArray;
+
+		void* LinkedBuffer;
+	};
 
 	class COpenGLDriver : public CNullDriver, public IMaterialRendererServices, public COpenGLExtensionHandler
 	{
 		friend class COpenGLCallBridge;
+		friend class COpenGLHardwareBuffer;
 		friend class COpenGLTexture;
 	public:
 		// Information about state of fixed pipeline activity.
@@ -90,29 +158,11 @@ namespace video
 		//! sets transformation
 		virtual void setTransform(E_TRANSFORMATION_STATE state, const core::matrix4& mat) _IRR_OVERRIDE_;
 
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer) _IRR_OVERRIDE_;
 
-		struct SHWBufferLink_opengl : public SHWBufferLink
-		{
-			SHWBufferLink_opengl(const scene::IMeshBuffer *_MeshBuffer): SHWBufferLink(_MeshBuffer), vbo_verticesID(0),vbo_indicesID(0){}
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer) _IRR_OVERRIDE_;
 
-			GLuint vbo_verticesID; //tmp
-			GLuint vbo_indicesID; //tmp
-
-			GLuint vbo_verticesSize; //tmp
-			GLuint vbo_indicesSize; //tmp
-		};
-
-		//! updates hardware buffer if needed
-		virtual bool updateHardwareBuffer(SHWBufferLink *HWBuffer) _IRR_OVERRIDE_;
-
-		//! Create hardware buffer from mesh
-		virtual SHWBufferLink *createHardwareBuffer(const scene::IMeshBuffer* mb) _IRR_OVERRIDE_;
-
-		//! Delete hardware buffer (only some drivers can)
-		virtual void deleteHardwareBuffer(SHWBufferLink *HWBuffer) _IRR_OVERRIDE_;
-
-		//! Draw hardware buffer
-		virtual void drawHardwareBuffer(SHWBufferLink *HWBuffer) _IRR_OVERRIDE_;
+		void removeAllHardwareBuffers();
 
 		//! Create occlusion query.
 		/** Use node for identification and mesh for occlusion test. */
@@ -138,10 +188,7 @@ namespace video
 		actual value of pixels. */
 		virtual u32 getOcclusionQueryResult(scene::ISceneNode* node) const _IRR_OVERRIDE_;
 
-		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType) _IRR_OVERRIDE_;
+		virtual void drawMeshBuffer(const scene::IMeshBuffer* mb) _IRR_OVERRIDE_;
 
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -275,6 +322,9 @@ namespace video
 		//! the window was resized.
 		virtual void OnResize(const core::dimension2d<u32>& size) _IRR_OVERRIDE_;
 
+		//! Adds a new material renderer to the video device.
+		virtual s32 addMaterialRenderer(IMaterialRenderer* renderer, const char* name = 0);
+
 		//! Returns type of video driver
 		virtual E_DRIVER_TYPE getDriverType() const _IRR_OVERRIDE_;
 
@@ -406,9 +456,11 @@ namespace video
 
 		ITexture* createDepthTexture(ITexture* texture, bool shared=true);
 		void removeDepthTexture(ITexture* texture);
-
+		
 		//! Removes a texture from the texture cache and deletes it, freeing lot of memory.
 		void removeTexture(ITexture* texture);
+		
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName) _IRR_OVERRIDE_;
 
 		//! Convert E_PRIMITIVE_TYPE to OpenGL equivalent
 		GLenum primitiveTypeToGL(scene::E_PRIMITIVE_TYPE type) const;
@@ -427,6 +479,14 @@ namespace video
 
 		//! Get current material.
 		const SMaterial& getCurrentMaterial() const;
+		
+		GLuint getActiveGLSLProgram();
+		
+		void setActiveGLSLProgram(GLuint program);
+
+		GLuint getActiveARBProgram();
+		
+		void setActiveARBProgram(GLuint program);
 
 		//! Get bridge calls.
 		COpenGLCallBridge* getBridgeCalls() const;
@@ -438,11 +498,10 @@ namespace video
 
 	private:
 
+		void setVertexDescriptor(IVertexDescriptor* vertexDescriptor);
+
 		//! clears the zbuffer and color buffer
 		void clearBuffers(bool backBuffer, bool zBuffer, bool stencilBuffer, SColor color);
-
-		bool updateVertexHardwareBuffer(SHWBufferLink_opengl *HWBuffer);
-		bool updateIndexHardwareBuffer(SHWBufferLink_opengl *HWBuffer);
 
 		void uploadClipPlane(u32 index);
 
@@ -477,9 +536,7 @@ namespace video
 		//! helper function for render setup.
 		void getColorBuffer(const void* vertices, u32 vertexCount, E_VERTEX_TYPE vType);
 
-		//! helper function doing the actual rendering.
-		void renderArray(const void* indexList, u32 primitiveCount,
-				scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType);
+		void renderArray(const void* indices, GLenum indexType, u32 primitiveCount, scene::E_PRIMITIVE_TYPE primitiveType);
 
 		// Bridge calls.
 		COpenGLCallBridge* BridgeCalls;
@@ -596,6 +653,18 @@ namespace video
 
 		SIrrlichtCreationParameters Params;
 
+		//! Status of vertex attribute (Disabled/Enabled). Max 16 attributes per vertex.
+		bool VertexAttributeStatus[16];
+
+		//! Active GLSL program
+		GLuint ActiveGLSLProgram;
+
+		//! Active ARB program
+		GLuint ActiveARBProgram;
+
+		//! Last used vertex descriptor
+		IVertexDescriptor* LastVertexDescriptor;
+
 		//! All the lights that have been requested; a hardware limited
 		//! number of them will be used at once.
 		struct RequestedLight
@@ -607,7 +676,9 @@ namespace video
 			s32	HardwareLightIndex; // GL_LIGHT0 - GL_LIGHT7
 			bool	DesireToBeOn;
 		};
+
 		core::array<RequestedLight> RequestedLights;
+		core::array<COpenGLHardwareBuffer*> HardwareBuffer;
 
 		//! Built-in 2D quad for 2D rendering.
 		S3DVertex Quad2DVertices[4];
@@ -673,7 +744,7 @@ namespace video
 
 		// Client state calls.
 
-		void setClientState(bool vertex, bool normal, bool color, bool texCoord0);
+		void setClientState(bool vertex, bool normal, bool color);
 
 		// Color Mask.
 
@@ -732,7 +803,6 @@ namespace video
 		bool ClientStateVertex;
 		bool ClientStateNormal;
 		bool ClientStateColor;
-		bool ClientStateTexCoord0;
 
 		bool (*ColorMask)[4];
 

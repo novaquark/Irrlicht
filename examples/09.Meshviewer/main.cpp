@@ -235,7 +235,20 @@ void loadModel(const c8* fn)
 	// set default material properties
 
 	if (Octree)
-		Model = Device->getSceneManager()->addOctreeSceneNode(m->getMesh(0));
+	{
+		switch(m->getMesh(0)->getMeshBuffer(0)->getVertexBuffer()->getVertexSize())
+		{
+		case sizeof(video::S3DVertex):
+			Model = Device->getSceneManager()->addOctreeSceneNode<video::S3DVertex>(m->getMesh(0));
+			break;
+		case sizeof(video::S3DVertex2TCoords):
+			Model = Device->getSceneManager()->addOctreeSceneNode<video::S3DVertex2TCoords>(m->getMesh(0));
+			break;
+		case sizeof(video::S3DVertexTangents):
+			Model = Device->getSceneManager()->addOctreeSceneNode<video::S3DVertexTangents>(m->getMesh(0));
+			break;
+		}
+	}
 	else
 	{
 		scene::IAnimatedMeshSceneNode* animModel = Device->getSceneManager()->addAnimatedMeshSceneNode(m);

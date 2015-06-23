@@ -16,6 +16,7 @@ bool CMainMenu::run(bool& outFullscreen, bool& outMusic, bool& outShadows,
 			bool& outAdditive, bool& outVSync, bool& outAA,
 			video::E_DRIVER_TYPE& outDriver)
 {
+	//video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D11;
 	//video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D9;
 	//video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
 	video::E_DRIVER_TYPE driverType = video::EDT_BURNINGSVIDEO;
@@ -63,6 +64,7 @@ bool CMainMenu::run(bool& outFullscreen, bool& outMusic, bool& outShadows,
 	box->addItem(L"OpenGL 1.5");
 	box->addItem(L"Direct3D 8.1");
 	box->addItem(L"Direct3D 9.0c");
+	box->addItem(L"Direct3D 11");
 	box->addItem(L"Burning's Video 0.47");
 	box->addItem(L"Irrlicht Software Renderer 1.0");
 	box->setSelected(selected);
@@ -255,8 +257,9 @@ bool CMainMenu::run(bool& outFullscreen, bool& outMusic, bool& outShadows,
 	case 0:	outDriver = video::EDT_OPENGL; break;
 	case 1:	outDriver = video::EDT_DIRECT3D8; break;
 	case 2:	outDriver = video::EDT_DIRECT3D9; break;
-	case 3:	outDriver = video::EDT_BURNINGSVIDEO; break;
-	case 4:	outDriver = video::EDT_SOFTWARE; break;
+	case 3:	outDriver = video::EDT_DIRECT3D11; break;
+	case 4:	outDriver = video::EDT_BURNINGSVIDEO; break;
+	case 5:	outDriver = video::EDT_SOFTWARE; break;
 	}
 
 	return start;

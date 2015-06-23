@@ -11,12 +11,12 @@
 #include "IVideoDriver.h"
 #include "irrString.h"
 #include "SMesh.h"
-#include "SMeshBuffer.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 #include "IMeshManipulator.h"
 #include "matrix4.h"
 #include "quaternion.h"
 #include "CSkinnedMesh.h"
+#include "ISceneManager.h"
 
 namespace irr
 {
@@ -29,7 +29,7 @@ class COgreMeshFileLoader : public IMeshLoader
 public:
 
 	//! Constructor
-	COgreMeshFileLoader(io::IFileSystem* fs, video::IVideoDriver* driver);
+	COgreMeshFileLoader(io::IFileSystem* fs, scene::ISceneManager* smgr);
 
 	//! destructor
 	virtual ~COgreMeshFileLoader();
@@ -235,8 +235,8 @@ private:
 	void readQuaternion(io::IReadFile* file, ChunkData& data, core::quaternion& out);
 
 	void composeMeshBufferMaterial(scene::IMeshBuffer* mb, const core::stringc& materialName);
-	scene::SMeshBuffer* composeMeshBuffer(const core::array<s32>& indices, const OgreGeometry& geom);
-	scene::SMeshBufferLightMap* composeMeshBufferLightMap(const core::array<s32>& indices, const OgreGeometry& geom);
+	scene::CMeshBuffer<video::S3DVertex>* composeMeshBuffer(const core::array<s32>& indices, const OgreGeometry& geom);
+	scene::CMeshBuffer<video::S3DVertex2TCoords>* composeMeshBufferLightMap(const core::array<s32>& indices, const OgreGeometry& geom);
 	scene::IMeshBuffer* composeMeshBufferSkinned(scene::CSkinnedMesh& mesh, const core::array<s32>& indices, const OgreGeometry& geom);
 	void composeObject(void);
 	bool readColor(io::IReadFile* meshFile, video::SColor& col);
@@ -249,6 +249,7 @@ private:
 
 	io::IFileSystem* FileSystem;
 	video::IVideoDriver* Driver;
+	scene::ISceneManager* SceneManager;
 
 	core::stringc Version;
 	bool SwapEndian;

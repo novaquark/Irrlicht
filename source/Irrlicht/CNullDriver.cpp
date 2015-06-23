@@ -15,6 +15,7 @@
 #include "CMeshManipulator.h"
 #include "CColorConverter.h"
 #include "IAttributeExchangingObject.h"
+#include "CVertexDescriptor.h"
 
 
 namespace irr
@@ -112,6 +113,8 @@ CNullDriver::CNullDriver(io::IFileSystem* io, const core::dimension2d<u32>& scre
 	setTextureCreationFlag(ETCF_CREATE_MIP_MAPS, true);
 
 	ViewPort = core::rect<s32>(core::position2d<s32>(0,0), core::dimension2di(screenSize));
+
+	// builtin vertex descriptors
 
 	// create manipulator
 	MeshManipulator = new scene::CMeshManipulator();
@@ -223,10 +226,46 @@ CNullDriver::~CNullDriver()
 	// delete material renderers
 	deleteMaterialRenders();
 
-	// delete hardware mesh buffers
-	removeAllHardwareBuffers();
+	deleteVertexDescriptors();
 }
 
+void CNullDriver::deleteVertexDescriptors()
+{
+	const u32 size = VertexDescriptor.size();
+
+	for(u32 i = 0; i < size; ++i)
+		VertexDescriptor[i]->drop();
+
+	VertexDescriptor.clear();
+}
+
+bool CNullDriver::createVertexDescriptors()
+{
+	deleteVertexDescriptors();
+
+	addVertexDescriptor("standard");
+	VertexDescriptor[0]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT, 0);
+	VertexDescriptor[0]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT, 0);
+	VertexDescriptor[0]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE, 0);
+	VertexDescriptor[0]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT, 0);
+
+	addVertexDescriptor("2tcoords");
+	VertexDescriptor[1]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT, 0);
+	VertexDescriptor[1]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT, 0);
+	VertexDescriptor[1]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE, 0);
+	VertexDescriptor[1]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT, 0);
+	VertexDescriptor[1]->addAttribute("inTexCoord1", 2, EVAS_TEXCOORD1, EVAT_FLOAT, 0);
+
+	addVertexDescriptor("tangents");
+	VertexDescriptor[2]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT, 0);
+	VertexDescriptor[2]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT, 0);
+	VertexDescriptor[2]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE, 0);
+	VertexDescriptor[2]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT, 0);
+	VertexDescriptor[2]->addAttribute("inTangent", 3, EVAS_TANGENT, EVAT_FLOAT, 0);
+	VertexDescriptor[2]->addAttribute("inBinormal", 3, EVAS_BINORMAL, EVAT_FLOAT, 0);
+
+	return true;
+}
 
 //! Adds an external surface loader to the engine.
 void CNullDriver::addExternalImageLoader(IImageLoader* loader)
@@ -311,7 +350,6 @@ bool CNullDriver::beginScene(bool backBuffer, bool zBuffer, SColor color,
 bool CNullDriver::endScene()
 {
 	FPSCounter.registerFrame(os::Timer::getRealTime(), PrimitivesDrawn);
-	updateAllHardwareBuffers();
 	updateAllOcclusionQueries();
 	return true;
 }
@@ -653,15 +691,6 @@ const core::rect<s32>& CNullDriver::getViewPort() const
 }
 
 
-//! draws a vertex primitive list
-void CNullDriver::drawVertexPrimitiveList(const void* vertices, u32 vertexCount, const void* indexList, u32 primitiveCount, E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
-{
-	if ((iType==EIT_16BIT) && (vertexCount>65536))
-		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
-	PrimitivesDrawn += primitiveCount;
-}
-
-
 //! draws a vertex primitive list in 2d
 void CNullDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount, const void* indexList, u32 primitiveCount, E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
 {
@@ -675,27 +704,68 @@ void CNullDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCoun
 void CNullDriver::draw3DLine(const core::vector3df& start,
 				const core::vector3df& end, SColor color)
 {
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], EIT_16BIT);
+	meshBuffer->setPrimitiveType(scene::EPT_LINES);
+
+	scene::IVertexBuffer* vertices = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* indices = meshBuffer->getIndexBuffer();
+
+	indices->reallocate(2);
+	vertices->reallocate(2);
+
+	indices->addIndex(0);
+	indices->addIndex(1);
+
+	video::S3DVertex vert;
+	vert.Color = color;
+	
+	vert.Pos = start;
+	vertices->addVertex(&vert);
+
+	vert.Pos = end;
+	vertices->addVertex(&vert);
+
+	drawMeshBuffer(meshBuffer);
+
+	meshBuffer->drop();
 }
 
 
 //! Draws a 3d triangle.
 void CNullDriver::draw3DTriangle(const core::triangle3df& triangle, SColor color)
 {
-	S3DVertex vertices[3];
-	vertices[0].Pos=triangle.pointA;
-	vertices[0].Color=color;
-	vertices[0].Normal=triangle.getNormal().normalize();
-	vertices[0].TCoords.set(0.f,0.f);
-	vertices[1].Pos=triangle.pointB;
-	vertices[1].Color=color;
-	vertices[1].Normal=vertices[0].Normal;
-	vertices[1].TCoords.set(0.5f,1.f);
-	vertices[2].Pos=triangle.pointC;
-	vertices[2].Color=color;
-	vertices[2].Normal=vertices[0].Normal;
-	vertices[2].TCoords.set(1.f,0.f);
-	const u16 indexList[] = {0,1,2};
-	drawVertexPrimitiveList(vertices, 3, indexList, 1, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], EIT_16BIT);
+	meshBuffer->setPrimitiveType(scene::EPT_LINES);
+
+	scene::IVertexBuffer* vertices = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* indices = meshBuffer->getIndexBuffer();
+
+	indices->reallocate(3);
+	vertices->reallocate(3);
+
+	indices->addIndex(0);
+	indices->addIndex(1);
+	indices->addIndex(2);
+
+	video::S3DVertex vert;
+	vert.Color = color;
+	vert.Normal=triangle.getNormal().normalize();
+
+	vert.Pos=triangle.pointA;
+	vert.TCoords.set(0.f,0.f);
+	vertices->addVertex(&vert);
+
+	vert.Pos=triangle.pointB;
+	vert.TCoords.set(0.5f,1.f);
+	vertices->addVertex(&vert);
+
+	vert.Pos=triangle.pointC;
+	vert.TCoords.set(1.f,0.f);
+	vertices->addVertex(&vert);
+
+	drawMeshBuffer(meshBuffer);
+
+	meshBuffer->drop();
 }
 
 
@@ -705,20 +775,32 @@ void CNullDriver::draw3DBox(const core::aabbox3d<f32>& box, SColor color)
 	core::vector3df edges[8];
 	box.getEdges(edges);
 
-	// TODO: optimize into one big drawIndexPrimitive call.
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], EIT_16BIT);
+	meshBuffer->setPrimitiveType(scene::EPT_LINES);
 
-	draw3DLine(edges[5], edges[1], color);
-	draw3DLine(edges[1], edges[3], color);
-	draw3DLine(edges[3], edges[7], color);
-	draw3DLine(edges[7], edges[5], color);
-	draw3DLine(edges[0], edges[2], color);
-	draw3DLine(edges[2], edges[6], color);
-	draw3DLine(edges[6], edges[4], color);
-	draw3DLine(edges[4], edges[0], color);
-	draw3DLine(edges[1], edges[0], color);
-	draw3DLine(edges[3], edges[2], color);
-	draw3DLine(edges[7], edges[6], color);
-	draw3DLine(edges[5], edges[4], color);
+	scene::IVertexBuffer* vertices = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* indices = meshBuffer->getIndexBuffer();
+
+	indices->reallocate(24);
+	vertices->reallocate(24);
+	
+	for(u32 i = 0; i < 24; i++)
+		indices->addIndex(i);
+
+	video::S3DVertex vert;
+	vert.Color = color;
+
+	u32 edgeIndex[] = { 5, 1, 1, 3, 3, 7, 7, 5, 0, 2, 2, 6, 6, 4, 4, 0, 1, 0, 3, 2, 7, 6, 5, 4 };
+
+	for (u32 i = 0; i < 24; ++i)
+	{
+		vert.Pos = edges[edgeIndex[i]];
+		vertices->addVertex(&vert);
+	}
+
+	drawMeshBuffer(meshBuffer);
+
+	meshBuffer->drop();
 }
 
 
@@ -802,10 +884,26 @@ void CNullDriver::draw2DImage(const video::ITexture* texture, const core::positi
 //! Draws the outline of a 2d rectangle
 void CNullDriver::draw2DRectangleOutline(const core::recti& pos, SColor color)
 {
-	draw2DLine(pos.UpperLeftCorner, core::position2di(pos.LowerRightCorner.X, pos.UpperLeftCorner.Y), color);
-	draw2DLine(core::position2di(pos.LowerRightCorner.X, pos.UpperLeftCorner.Y), pos.LowerRightCorner, color);
-	draw2DLine(pos.LowerRightCorner, core::position2di(pos.UpperLeftCorner.X, pos.LowerRightCorner.Y), color);
-	draw2DLine(core::position2di(pos.UpperLeftCorner.X, pos.LowerRightCorner.Y), pos.UpperLeftCorner, color);
+	video::S3DVertex v[8];
+
+	for(u32 i = 0; i < 8; i++)
+		v[i].Color = color;
+
+	v[0].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.UpperLeftCorner.Y, 0.f);
+	v[1].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.UpperLeftCorner.Y, 0.f);
+
+	v[2].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.UpperLeftCorner.Y, 0.f);
+	v[3].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.LowerRightCorner.Y, 0.f);
+
+	v[4].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.LowerRightCorner.Y, 0.f);
+	v[5].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.LowerRightCorner.Y, 0.f);
+
+	v[6].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.LowerRightCorner.Y, 0.f);
+	v[7].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.UpperLeftCorner.Y, 0.f);
+
+	const u16 indexList[] = {0,1,2,3,4,5,6,7};
+
+	draw2DVertexPrimitiveList(v, 8, indexList, 4, EVT_STANDARD, scene::EPT_LINES, EIT_16BIT);
 }
 
 
@@ -845,6 +943,15 @@ void CNullDriver::draw2DPolygon(core::position2d<s32> center,
 	if (count < 2)
 		return;
 
+	core::array<video::S3DVertex> vertices;
+	core::array<u16> indices;
+
+	vertices.reallocate(count * 2 + 2);
+	indices.reallocate(count * 2 + 2);
+
+	video::S3DVertex v;
+	v.Color = color;
+
 	core::position2d<s32> first;
 	core::position2d<s32> a,b;
 
@@ -858,10 +965,28 @@ void CNullDriver::draw2DPolygon(core::position2d<s32> center,
 		if (j==0)
 			first = a;
 		else
-			draw2DLine(a, b, color);
-	}
+		{
+			v.Pos = core::vector3df((f32)a.X, (f32)a.Y, 0.f);
+			vertices.push_back(v);
+			v.Pos = core::vector3df((f32)b.X, (f32)b.Y, 0.f);
+			vertices.push_back(v);
 
-	draw2DLine(a, first, color);
+			indices.push_back(indices.size());
+			indices.push_back(indices.size());
+		}
+	}
+	v.Pos = core::vector3df((f32)a.X, (f32)a.Y, 0.f);
+	vertices.push_back(v);
+	v.Pos = core::vector3df((f32)first.X, (f32)first.Y, 0.f);
+	vertices.push_back(v);
+
+	indices.push_back(indices.size());
+	indices.push_back(indices.size());
+
+	draw2DVertexPrimitiveList(vertices.const_pointer(), vertices.size(), indices.const_pointer(), indices.size() / 2, EVT_STANDARD, scene::EPT_LINES, EIT_16BIT);
+
+	vertices.clear();
+	indices.clear();
 }
 
 
@@ -1519,95 +1644,169 @@ void CNullDriver::getFog(SColor& color, E_FOG_TYPE& fogType, f32& start, f32& en
 //! Draws a mesh buffer
 void CNullDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 {
-	if (!mb)
+	if (!mb || !mb->isVertexBufferCompatible())
 		return;
 
-	//IVertexBuffer and IIndexBuffer later
+	if ((mb->getIndexBuffer()->getType() == EIT_16BIT) && (mb->getVertexBuffer(0)->getVertexCount() > 65536))
+		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
+
+	PrimitivesDrawn += mb->getPrimitiveCount();
+
+
+	/*
 	SHWBufferLink *HWBuffer=getBufferLink(mb);
 
 	if (HWBuffer)
 		drawHardwareBuffer(HWBuffer);
 	else
-		drawVertexPrimitiveList(mb->getVertices(), mb->getVertexCount(), mb->getIndices(), mb->getIndexCount()/3, mb->getVertexType(), scene::EPT_TRIANGLES, mb->getIndexType());
+		drawVertexPrimitiveList(mb->getVertexBuffer(), mb->getIndexBuffer(), mb->getVertexDescriptor(), mb->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);*/
 }
 
 
 //! Draws the normals of a mesh buffer
 void CNullDriver::drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length, SColor color)
 {
-	const u32 count = mb->getVertexCount();
+	if (!mb || !mb->isVertexBufferCompatible())
+		return;
+
 	const bool normalize = mb->getMaterial().NormalizeNormals;
 
-	for (u32 i=0; i < count; ++i)
+	int Found = 0;
+
+	video::IVertexDescriptor* vd = mb->getVertexDescriptor();
+
+	u32 positionBufferID = 0;
+	u32 positionOffset = 0;
+
+	u32 normalBufferID = 0;
+	u32 normalOffset = 0;
+
+	const u32 attributeCount = vd->getAttributeCount();
+
+	for (u32 i = 0; i < attributeCount; ++i)
 	{
-		core::vector3df normalizedNormal = mb->getNormal(i);
+		video::IVertexAttribute * attribute = vd->getAttribute(i);
+
+		switch (attribute->getSemantic())
+		{
+		case video::EVAS_POSITION:
+			positionBufferID = attribute->getBufferID();
+			positionOffset = attribute->getOffset();
+			++Found;
+			break;
+		case video::EVAS_NORMAL:
+			normalBufferID = attribute->getBufferID();
+			normalOffset = attribute->getOffset();
+			++Found;
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (Found != 2)
+		return;
+
+	core::vector3df* position = 0;
+	core::vector3df* normal = 0;
+
+	scene::IIndexBuffer* ib = mb->getIndexBuffer();
+	scene::IVertexBuffer* vbP = mb->getVertexBuffer(positionBufferID);
+	scene::IVertexBuffer* vbN = mb->getVertexBuffer(normalBufferID);
+
+	const u32 vertexSizeP = vbP->getVertexSize();
+	const u32 vertexCountP = vbP->getVertexCount();
+	const u32 vertexSizeN = vbN->getVertexSize();
+	const u32 vertexCountN = vbN->getVertexCount();
+
+	u8* positionData = static_cast<u8*>(vbP->getVertices());
+	positionData += positionOffset;
+
+	u8* normalData = static_cast<u8*>(vbN->getVertices());
+	normalData += normalOffset;
+
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], ib->getType());
+	meshBuffer->setPrimitiveType(scene::EPT_LINES);
+
+	scene::IVertexBuffer* vertexBuffer = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* indexBuffer = meshBuffer->getIndexBuffer();
+
+	vertexBuffer->reallocate(vertexCountP * 2);
+	indexBuffer->reallocate(vertexCountP * 2);
+
+	for (u32 i = 0; i < vertexCountP; ++i)
+	{
+		indexBuffer->addIndex(i * 2);
+		indexBuffer->addIndex(i * 2 + 1);
+
+		position = (core::vector3df*)(positionData + vertexSizeP * i);
+		normal = (core::vector3df*)(normalData + vertexSizeN * i);
+
+		core::vector3df normalizedNormal = *normal;
+
 		if (normalize)
 			normalizedNormal.normalize();
 
-		const core::vector3df& pos = mb->getPosition(i);
-		draw3DLine(pos, pos + (normalizedNormal * length), color);
+		S3DVertex vert;
+		vert.Color = color;
+		vert.Pos = *position;
+		vertexBuffer->addVertex(&vert);
+		vert.Pos = *position + (normalizedNormal * length);
+		vertexBuffer->addVertex(&vert);
 	}
+
+	drawMeshBuffer(meshBuffer);
+
+	meshBuffer->drop();
 }
 
 
-CNullDriver::SHWBufferLink *CNullDriver::getBufferLink(const scene::IMeshBuffer* mb)
+IVertexDescriptor* CNullDriver::addVertexDescriptor(const core::stringc& pName)
 {
-	if (!mb || !isHardwareBufferRecommend(mb))
-		return 0;
+	for (u32 i = 0; i < VertexDescriptor.size(); ++i)
+		if (pName == VertexDescriptor[i]->getName())
+			return VertexDescriptor[i];
 
-	//search for hardware links
-	core::map< const scene::IMeshBuffer*,SHWBufferLink* >::Node* node = HWBufferMap.find(mb);
-	if (node)
-		return node->getValue();
+	CVertexDescriptor* vertexDescriptor = new CVertexDescriptor(pName, VertexDescriptor.size());
+	VertexDescriptor.push_back(vertexDescriptor);
 
-	return createHardwareBuffer(mb); //no hardware links, and mesh wants one, create it
+	return vertexDescriptor;
 }
 
 
-//! Update all hardware buffers, remove unused ones
-void CNullDriver::updateAllHardwareBuffers()
+IVertexDescriptor* CNullDriver::getVertexDescriptor(u32 id) const
 {
-	core::map<const scene::IMeshBuffer*,SHWBufferLink*>::ParentFirstIterator Iterator=HWBufferMap.getParentFirstIterator();
+	if(id < VertexDescriptor.size())
+		return VertexDescriptor[id];
 
-	for (;!Iterator.atEnd();Iterator++)
-	{
-		SHWBufferLink *Link=Iterator.getNode()->getValue();
-
-		Link->LastUsed++;
-		if (Link->LastUsed>20000)
-		{
-			deleteHardwareBuffer(Link);
-
-			// todo: needs better fix
-			Iterator = HWBufferMap.getParentFirstIterator();
-		}
-	}
+	return 0;
 }
 
 
-void CNullDriver::deleteHardwareBuffer(SHWBufferLink *HWBuffer)
+IVertexDescriptor* CNullDriver::getVertexDescriptor(const core::stringc& pName) const
 {
-	if (!HWBuffer)
-		return;
-	HWBufferMap.remove(HWBuffer->MeshBuffer);
-	delete HWBuffer;
+	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
+		if(pName == VertexDescriptor[i]->getName())
+			return VertexDescriptor[i];
+
+	return 0;
 }
 
 
-//! Remove hardware buffer
-void CNullDriver::removeHardwareBuffer(const scene::IMeshBuffer* mb)
+u32 CNullDriver::getVertexDescriptorCount() const
 {
-	core::map<const scene::IMeshBuffer*,SHWBufferLink*>::Node* node = HWBufferMap.find(mb);
-	if (node)
-		deleteHardwareBuffer(node->getValue());
+	return VertexDescriptor.size();
 }
 
 
-//! Remove all hardware buffers
-void CNullDriver::removeAllHardwareBuffers()
+IHardwareBuffer* CNullDriver::createHardwareBuffer(scene::IIndexBuffer* indexBuffer)
 {
-	while (HWBufferMap.size())
-		deleteHardwareBuffer(HWBufferMap.getRoot()->getValue());
+	return 0;
+}
+
+IHardwareBuffer* CNullDriver::createHardwareBuffer(scene::IVertexBuffer* vertexBuffer)
+{
+	return 0;
 }
 
 
@@ -1616,7 +1815,7 @@ bool CNullDriver::isHardwareBufferRecommend(const scene::IMeshBuffer* mb)
 	if (!mb || (mb->getHardwareMappingHint_Index()==scene::EHM_NEVER && mb->getHardwareMappingHint_Vertex()==scene::EHM_NEVER))
 		return false;
 
-	if (mb->getVertexCount()<MinVertexCountForVBO)
+	if (mb->getVertexBuffer()->getVertexCount()<MinVertexCountForVBO)
 		return false;
 
 	return true;
@@ -2452,7 +2651,6 @@ void CNullDriver::convertColor(const void* sP, ECOLOR_FORMAT sF, s32 sN,
 {
 	video::CColorConverter::convert_viaFormat(sP, sF, sN, dP, dF);
 }
-
 
 } // end namespace
 } // end namespace

@@ -34,8 +34,13 @@ CTerrainTriangleSelector::~CTerrainTriangleSelector()
 //! Clears and sets triangle data
 void CTerrainTriangleSelector::setTriangleData(ITerrainSceneNode* node, s32 LOD)
 {
-	// Get pointer to the GeoMipMaps vertices
-	const video::S3DVertex2TCoords* vertices = static_cast<const video::S3DVertex2TCoords*>(node->getRenderBuffer()->getVertices());
+	video::IVertexAttribute* attribute = node->getRenderBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+	if(!attribute)
+		return;
+
+	u8* offset = static_cast<u8*>(node->getRenderBuffer()->getVertexBuffer()->getVertices());
+	offset += attribute->getOffset();
 
 	// Clear current data
 	const s32 count = (static_cast<CTerrainSceneNode*>(node))->TerrainData.PatchCount;
@@ -60,9 +65,13 @@ void CTerrainTriangleSelector::setTriangleData(ITerrainSceneNode* node, s32 LOD)
 			TrianglePatches.TrianglePatchArray[tIndex].Triangles.reallocate(indexCount/3);
 			for(u32 i = 0; i < indexCount; i += 3 )
 			{
-				tri.pointA = vertices[indices[i+0]].Pos;
-				tri.pointB = vertices[indices[i+1]].Pos;
-				tri.pointC = vertices[indices[i+2]].Pos;
+				core::vector3df* PositionA = (core::vector3df*)(offset + node->getRenderBuffer()->getVertexBuffer()->getVertexSize() * indices[i+0]);
+				core::vector3df* PositionB = (core::vector3df*)(offset + node->getRenderBuffer()->getVertexBuffer()->getVertexSize() * indices[i+1]);
+				core::vector3df* PositionC = (core::vector3df*)(offset + node->getRenderBuffer()->getVertexBuffer()->getVertexSize() * indices[i+2]);
+
+				tri.pointA = *PositionA;
+				tri.pointB = *PositionB;
+				tri.pointC = *PositionC;
 				TrianglePatches.TrianglePatchArray[tIndex].Triangles.push_back(tri);
 				++TrianglePatches.TrianglePatchArray[tIndex].NumTriangles;
 			}

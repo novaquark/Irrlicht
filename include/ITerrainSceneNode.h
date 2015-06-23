@@ -12,7 +12,7 @@
 
 #include "ETerrainElements.h"
 #include "ISceneNode.h"
-#include "IDynamicMeshBuffer.h"
+#include "IMeshBuffer.h"
 #include "irrArray.h"
 
 namespace irr
@@ -79,7 +79,7 @@ namespace scene
 		//! Gets the meshbuffer data based on a specified level of detail.
 		/** \param mb A reference to an IDynamicMeshBuffer object
 		\param LOD The level of detail you want the indices from. */
-		virtual void getMeshBufferForLOD(IDynamicMeshBuffer& mb, s32 LOD=0) const =0;
+		virtual void getMeshBufferForLOD(IMeshBuffer& mb, s32 LOD=0) const =0;
 
 		//! Gets the indices for a specified patch at a specified Level of Detail.
 		/** \param indices A reference to an array of u32 indices.

@@ -7,7 +7,7 @@
 #include "IVideoDriver.h"
 #include "ICameraSceneNode.h"
 #include "IGUISpriteBank.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "os.h"
 
 
@@ -119,9 +119,9 @@ CBillboardTextSceneNode::CBillboardTextSceneNode(ISceneNode* parent, ISceneManag
 			Mesh = new SMesh();
 			for (u32 i=0; i<Font->getSpriteBank()->getTextureCount(); ++i)
 			{
-				SMeshBuffer *mb = new SMeshBuffer();
-				mb->Material = Material;
-				mb->Material.setTexture(0, Font->getSpriteBank()->getTexture(i));
+				CMeshBuffer<video::S3DVertex> *mb = new CMeshBuffer<video::S3DVertex>(mgr->getVideoDriver()->getVertexDescriptor(0));
+				mb->getMaterial() = Material;
+				mb->getMaterial().setTexture(0, Font->getSpriteBank()->getTexture(i));
 				Mesh->addMeshBuffer(mb);
 				mb->drop();
 			}
@@ -164,8 +164,8 @@ void CBillboardTextSceneNode::setText(const wchar_t* text)
 	// clear mesh
 	for (u32 j=0; j < Mesh->getMeshBufferCount(); ++j)
 	{
-		((SMeshBuffer*)Mesh->getMeshBuffer(j))->Indices.clear();
-		((SMeshBuffer*)Mesh->getMeshBuffer(j))->Vertices.clear();
+		Mesh->getMeshBuffer(j)->getIndexBuffer()->clear();
+		Mesh->getMeshBuffer(j)->getVertexBuffer()->clear();
 	}
 
 	if (!Font)
@@ -192,33 +192,35 @@ void CBillboardTextSceneNode::setText(const wchar_t* text)
 		const core::rect<s32>& s = sourceRects[rectno];
 
 		// add space for letter to buffer
-		SMeshBuffer* buf = (SMeshBuffer*)Mesh->getMeshBuffer(texno);
-		u32 firstInd = buf->Indices.size();
-		u32 firstVert = buf->Vertices.size();
-		buf->Indices.set_used(firstInd + 6);
-		buf->Vertices.set_used(firstVert + 4);
+		IMeshBuffer* buf = Mesh->getMeshBuffer(texno);
+		u32 firstInd = buf->getIndexBuffer()->getIndexCount();
+		u32 firstVert = buf->getVertexBuffer()->getVertexCount();
+		buf->getIndexBuffer()->set_used(firstInd + 6);
+		buf->getVertexBuffer()->set_used(firstVert + 4);
 
 		tex[0] = (s.LowerRightCorner.X * dim[0]) + 0.5f*dim[0]; // half pixel
 		tex[1] = (s.LowerRightCorner.Y * dim[1]) + 0.5f*dim[1];
 		tex[2] = (s.UpperLeftCorner.Y  * dim[1]) - 0.5f*dim[1];
 		tex[3] = (s.UpperLeftCorner.X  * dim[0]) - 0.5f*dim[0];
 
-		buf->Vertices[firstVert+0].TCoords.set(tex[0], tex[1]);
-		buf->Vertices[firstVert+1].TCoords.set(tex[0], tex[2]);
-		buf->Vertices[firstVert+2].TCoords.set(tex[3], tex[2]);
-		buf->Vertices[firstVert+3].TCoords.set(tex[3], tex[1]);
+		video::S3DVertex* Vertices = static_cast<video::S3DVertex*>(buf->getVertexBuffer()->getVertices());
 
-		buf->Vertices[firstVert+0].Color = ColorBottom;
-		buf->Vertices[firstVert+3].Color = ColorBottom;
-		buf->Vertices[firstVert+1].Color = ColorTop;
-		buf->Vertices[firstVert+2].Color = ColorTop;
+		Vertices[firstVert+0].TCoords.set(tex[0], tex[1]);
+		Vertices[firstVert+1].TCoords.set(tex[0], tex[2]);
+		Vertices[firstVert+2].TCoords.set(tex[3], tex[2]);
+		Vertices[firstVert+3].TCoords.set(tex[3], tex[1]);
 
-		buf->Indices[firstInd+0] = (u16)firstVert+0;
-		buf->Indices[firstInd+1] = (u16)firstVert+2;
-		buf->Indices[firstInd+2] = (u16)firstVert+1;
-		buf->Indices[firstInd+3] = (u16)firstVert+0;
-		buf->Indices[firstInd+4] = (u16)firstVert+3;
-		buf->Indices[firstInd+5] = (u16)firstVert+2;
+		Vertices[firstVert+0].Color = ColorBottom;
+		Vertices[firstVert+3].Color = ColorBottom;
+		Vertices[firstVert+1].Color = ColorTop;
+		Vertices[firstVert+2].Color = ColorTop;
+
+		buf->getIndexBuffer()->setIndex(firstInd+0, firstVert+0);
+		buf->getIndexBuffer()->setIndex(firstInd+1, firstVert+2);
+		buf->getIndexBuffer()->setIndex(firstInd+2, firstVert+1);
+		buf->getIndexBuffer()->setIndex(firstInd+3, firstVert+0);
+		buf->getIndexBuffer()->setIndex(firstInd+4, firstVert+3);
+		buf->getIndexBuffer()->setIndex(firstInd+5, firstVert+2);
 
 		wchar_t *tp = 0;
 		if (i>0)
@@ -297,17 +299,19 @@ void CBillboardTextSceneNode::OnAnimate(u32 timeMs)
 		f32 w = (Size.Width * infw * 0.5f);
 		pos += space * w;
 
-		SMeshBuffer* buf = (SMeshBuffer*)Mesh->getMeshBuffer(info.bufNo);
+		IMeshBuffer* buf = Mesh->getMeshBuffer(info.bufNo);
 
-		buf->Vertices[info.firstVert+0].Normal = view;
-		buf->Vertices[info.firstVert+1].Normal = view;
-		buf->Vertices[info.firstVert+2].Normal = view;
-		buf->Vertices[info.firstVert+3].Normal = view;
+		video::S3DVertex* Vertices = static_cast<video::S3DVertex*>(buf->getVertexBuffer()->getVertices());
 
-		buf->Vertices[info.firstVert+0].Pos = pos + (space * w) + vertical;
-		buf->Vertices[info.firstVert+1].Pos = pos + (space * w) - vertical;
-		buf->Vertices[info.firstVert+2].Pos = pos - (space * w) - vertical;
-		buf->Vertices[info.firstVert+3].Pos = pos - (space * w) + vertical;
+		Vertices[info.firstVert+0].Normal = view;
+		Vertices[info.firstVert+1].Normal = view;
+		Vertices[info.firstVert+2].Normal = view;
+		Vertices[info.firstVert+3].Normal = view;
+
+		Vertices[info.firstVert+0].Pos = pos + (space * w) + vertical;
+		Vertices[info.firstVert+1].Pos = pos + (space * w) - vertical;
+		Vertices[info.firstVert+2].Pos = pos - (space * w) - vertical;
+		Vertices[info.firstVert+3].Pos = pos - (space * w) + vertical;
 
 		pos += space * (Size.Width*infk + w);
 	}
@@ -425,11 +429,14 @@ void CBillboardTextSceneNode::setColor(const video::SColor & overallColor)
 	for ( u32 i = 0; i != Text.size (); ++i )
 	{
 		const SSymbolInfo &info = Symbol[i];
-		SMeshBuffer* buf = (SMeshBuffer*)Mesh->getMeshBuffer(info.bufNo);
-		buf->Vertices[info.firstVert+0].Color = overallColor;
-		buf->Vertices[info.firstVert+1].Color = overallColor;
-		buf->Vertices[info.firstVert+2].Color = overallColor;
-		buf->Vertices[info.firstVert+3].Color = overallColor;
+		IMeshBuffer* buf = Mesh->getMeshBuffer(info.bufNo);
+
+		video::S3DVertex* Vertices = static_cast<video::S3DVertex*>(buf->getVertexBuffer()->getVertices());
+
+		Vertices[info.firstVert+0].Color = overallColor;
+		Vertices[info.firstVert+1].Color = overallColor;
+		Vertices[info.firstVert+2].Color = overallColor;
+		Vertices[info.firstVert+3].Color = overallColor;
 	}
 }
 
@@ -447,11 +454,14 @@ void CBillboardTextSceneNode::setColor(const video::SColor & topColor, const vid
 	for ( u32 i = 0; i != Text.size (); ++i )
 	{
 		const SSymbolInfo &info = Symbol[i];
-		SMeshBuffer* buf = (SMeshBuffer*)Mesh->getMeshBuffer(info.bufNo);
-		buf->Vertices[info.firstVert+0].Color = ColorBottom;
-		buf->Vertices[info.firstVert+3].Color = ColorBottom;
-		buf->Vertices[info.firstVert+1].Color = ColorTop;
-		buf->Vertices[info.firstVert+2].Color = ColorTop;
+		CMeshBuffer<video::S3DVertex>* buf = (CMeshBuffer<video::S3DVertex>*)Mesh->getMeshBuffer(info.bufNo);
+
+		video::S3DVertex* Vertices = static_cast<video::S3DVertex*>(buf->getVertexBuffer()->getVertices());
+
+		Vertices[info.firstVert+0].Color = ColorBottom;
+		Vertices[info.firstVert+3].Color = ColorBottom;
+		Vertices[info.firstVert+1].Color = ColorTop;
+		Vertices[info.firstVert+2].Color = ColorTop;
 	}
 }
 

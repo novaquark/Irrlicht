@@ -100,6 +100,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <OutputFile>..\..\bin\Win32-VisualStudio\18.SplitScreen.exe</OutputFile>
@@ -122,6 +123,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <OutputFile>..\..\bin\Win64-VisualStudio\18.SplitScreen.exe</OutputFile>
@@ -147,6 +149,7 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <OutputFile>..\..\bin\Win32-VisualStudio\18.SplitScreen.exe</OutputFile>
@@ -173,6 +176,7 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <OutputFile>..\..\bin\Win64-VisualStudio\18.SplitScreen.exe</OutputFile>

@@ -17,6 +17,7 @@
 #include "ISceneLoader.h"
 #include "EProfileIDs.h"
 #include "IProfiler.h"
+#include "IInstancedMeshSceneNode.h"
 
 #include "os.h"
 
@@ -142,6 +143,7 @@
 #include "CLightSceneNode.h"
 #include "CBillboardSceneNode.h"
 #include "CMeshSceneNode.h"
+#include "CInstancedMeshSceneNode.h"
 #include "CSkyBoxSceneNode.h"
 #include "CSkyDomeSceneNode.h"
 #include "CParticleSystemSceneNode.h"
@@ -225,7 +227,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	CollisionManager = new CSceneCollisionManager(this, Driver);
 
 	// create geometry creator
-	GeometryCreator = new CGeometryCreator();
+	GeometryCreator = new CGeometryCreator(Driver);
 
 	// add file format loaders. add the least commonly used ones first,
 	// as these are checked last
@@ -234,7 +236,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	// shallow copies from the previous manager if there is one.
 
 	#ifdef _IRR_COMPILE_WITH_STL_LOADER_
-	MeshLoaderList.push_back(new CSTLMeshFileLoader());
+	MeshLoaderList.push_back(new CSTLMeshFileLoader(Driver));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_PLY_LOADER_
 	MeshLoaderList.push_back(new CPLYMeshFileLoader(this));
@@ -258,7 +260,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	MeshLoaderList.push_back(new CDMFLoader(this, FileSystem));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_OGRE_LOADER_
-	MeshLoaderList.push_back(new COgreMeshFileLoader(FileSystem, Driver));
+	MeshLoaderList.push_back(new COgreMeshFileLoader(FileSystem, this));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_HALFLIFE_LOADER_
 	MeshLoaderList.push_back(new CHalflifeMDLMeshFileLoader( this ));
@@ -270,7 +272,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	MeshLoaderList.push_back(new CLWOMeshFileLoader(this, FileSystem));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_MD2_LOADER_
-	MeshLoaderList.push_back(new CMD2MeshFileLoader());
+	MeshLoaderList.push_back(new CMD2MeshFileLoader(Driver));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_IRR_MESH_LOADER_
 	MeshLoaderList.push_back(new CIrrMeshFileLoader(this, FileSystem));
@@ -339,8 +341,6 @@ CSceneManager::~CSceneManager()
 	//! force to remove hardwareTextures from the driver
 	//! because Scenes may hold internally data bounded to sceneNodes
 	//! which may be destroyed twice
-	if (Driver)
-		Driver->removeAllHardwareBuffers();
 
 	if (FileSystem)
 		FileSystem->drop();
@@ -669,26 +669,10 @@ IAnimatedMeshSceneNode* CSceneManager::addAnimatedMeshSceneNode(IAnimatedMesh* m
 }
 
 
-//! Adds a scene node for rendering using a octree to the scene graph. This a good method for rendering
-//! scenes with lots of geometry. The Octree is built on the fly from the mesh, much
-//! faster then a bsp tree.
-IMeshSceneNode* CSceneManager::addOctreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent,
-			s32 id, s32 minimalPolysPerNode, bool alsoAddIfMeshPointerZero)
-{
-	if (!alsoAddIfMeshPointerZero && (!mesh || !mesh->getFrameCount()))
-		return 0;
-
-	return addOctreeSceneNode(mesh ? mesh->getMesh(0) : 0,
-				parent, id, minimalPolysPerNode,
-				alsoAddIfMeshPointerZero);
-}
-
-
-//! Adds a scene node for rendering using a octree. This a good method for rendering
-//! scenes with lots of geometry. The Octree is built on the fly from the mesh, much
-//! faster then a bsp tree.
-IMeshSceneNode* CSceneManager::addOctreeSceneNode(IMesh* mesh, ISceneNode* parent,
-		s32 id, s32 minimalPolysPerNode, bool alsoAddIfMeshPointerZero)
+//! adds a scene node for rendering an animated mesh model
+IInstancedMeshSceneNode* CSceneManager::addInstancedMeshSceneNode(IMesh* mesh, ISceneNode* parent, s32 id,
+	const core::vector3df& position, const core::vector3df& rotation,
+	const core::vector3df& scale, bool alsoAddIfMeshPointerZero)
 {
 	if (!alsoAddIfMeshPointerZero && !mesh)
 		return 0;
@@ -696,11 +680,28 @@ IMeshSceneNode* CSceneManager::addOctreeSceneNode(IMesh* mesh, ISceneNode* paren
 	if (!parent)
 		parent = this;
 
-	COctreeSceneNode* node = new COctreeSceneNode(parent, this, id, minimalPolysPerNode);
+	IInstancedMeshSceneNode* node =
+		new CInstancedMeshSceneNode(mesh, parent, this, id, position, rotation, scale);
+	node->drop();
+
+	return node;
+}
+
+
+//! Adds a scene node for rendering using a octree to the scene graph. This a good method for rendering
+//! scenes with lots of geometry. The Octree is built on the fly from the mesh, much
+//! faster then a bsp tree.
+IMeshSceneNode* CSceneManager::addOctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshes, IMesh* origMesh, ISceneNode* parent,
+	s32 id, s32 minimalPolysPerNode)
+{
+	if (!parent)
+		parent = this;
+
+	COctreeSceneNode* node = new COctreeSceneNode(meshes, parent, this, id, minimalPolysPerNode);
 
 	if (node)
 	{
-		node->setMesh(mesh);
+		node->setMesh(origMesh);
 		node->drop();
 	}
 
@@ -1252,6 +1253,74 @@ bool CSceneManager::isCulled(const ISceneNode* node) const
 	}
 
 	_IRR_IMPLEMENT_MANAGED_MARSHALLING_BUGFIX;
+	return result;
+}
+
+//! returns if node is culled
+bool CSceneManager::isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, const core::matrix4& absoluteTransformation) const
+{
+	const ICameraSceneNode* cam = getActiveCamera();
+
+	if (!cam)
+		return false;
+
+	bool result = false;
+
+	// can be seen by a bounding box ?
+	if (!result && (type & scene::EAC_BOX))
+	{
+		absoluteTransformation.transformBoxEx(tbox);
+		result = !(tbox.intersectsWithBox(cam->getViewFrustum()->getBoundingBox()));
+	}
+
+	// can be seen by a bounding sphere
+	if (!result && (type & scene::EAC_FRUSTUM_SPHERE))
+	{
+		const float rad = tbox.getRadius();
+		const core::vector3df center = tbox.getCenter();
+
+		const float camrad = cam->getViewFrustum()->getBoundingRadius();
+		const core::vector3df camcenter = cam->getViewFrustum()->getBoundingCenter();
+
+		const float dist = (center - camcenter).getLengthSQ();
+		const float maxdist = (rad + camrad) * (rad + camrad);
+
+		result = dist > maxdist;
+	}
+
+	// can be seen by cam pyramid planes ?
+	if (!result && (type & scene::EAC_FRUSTUM_BOX))
+	{
+		SViewFrustum frust = *cam->getViewFrustum();
+
+		//transform the frustum to the node's current absolute transformation
+		core::matrix4 invTrans(absoluteTransformation, core::matrix4::EM4CONST_INVERSE);
+		//invTrans.makeInverse();
+		frust.transform(invTrans);
+
+		core::vector3df edges[8];
+		tbox.getEdges(edges);
+
+		for (s32 i = 0; i<scene::SViewFrustum::VF_PLANE_COUNT; ++i)
+		{
+			bool boxInFrustum = false;
+			for (u32 j = 0; j<8; ++j)
+			{
+				if (frust.planes[i].classifyPointRelation(edges[j]) != core::ISREL3D_FRONT)
+				{
+					boxInFrustum = true;
+					break;
+				}
+			}
+
+			if (!boxInFrustum)
+			{
+				result = true;
+				break;
+			}
+		}
+	}
+
 	return result;
 }
 

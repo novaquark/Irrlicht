@@ -1,7 +1,6 @@
 // Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
-
 #ifndef __IRR_COMPILE_CONFIG_H_INCLUDED__
 #define __IRR_COMPILE_CONFIG_H_INCLUDED__
 
@@ -121,7 +120,7 @@
 
 
 //! Maximum number of texture an SMaterial can have, up to 8 are supported by Irrlicht.
-#define _IRR_MATERIAL_MAX_TEXTURES_ 4
+#define _IRR_MATERIAL_MAX_TEXTURES_ 8
 
 //! Whether to support XML and XML-based formats (irrmesh, collada...)
 #define _IRR_COMPILE_WITH_XML_
@@ -177,6 +176,9 @@ If not defined, Windows Multimedia library is used, which offers also broad supp
 //! Only define _IRR_COMPILE_WITH_DIRECT3D_8_ if you have an appropriate DXSDK, e.g. Summer 2004
 // #define _IRR_COMPILE_WITH_DIRECT3D_8_
 #define _IRR_COMPILE_WITH_DIRECT3D_9_
+//! Only define _IRR_COMPILE_WITH_DIRECT3D_11_ if you have an appropriate DXSDK
+//! Download: http://msdn.microsoft.com/en-us/windows/desktop/hh852363.aspx
+#define _IRR_COMPILE_WITH_DIRECT3D_11_
 
 #ifdef NO_IRR_COMPILE_WITH_DIRECT3D_8_
 #undef _IRR_COMPILE_WITH_DIRECT3D_8_
@@ -184,7 +186,9 @@ If not defined, Windows Multimedia library is used, which offers also broad supp
 #ifdef NO_IRR_COMPILE_WITH_DIRECT3D_9_
 #undef _IRR_COMPILE_WITH_DIRECT3D_9_
 #endif
-
+#ifdef NO_IRR_COMPILE_WITH_DIRECT3D_11_
+#undef _IRR_COMPILE_WITH_DIRECT3D_11_
+#endif
 #endif
 
 //! Define _IRR_COMPILE_WITH_OPENGL_ to compile the Irrlicht engine with OpenGL.
@@ -710,6 +714,27 @@ precision will be lower but speed higher. currently X86 only
 	#ifdef NO_IRRLICHT_FAST_MATH
 	#undef IRRLICHT_FAST_MATH
 	#endif
+#endif
+
+//! Enable SSE optimisation for f32 matrices and f32 vectors.
+// #define _IRR_SSE
+#ifdef NO_IRR_SSE
+#undef _IRR_SSE
+#endif
+
+//! Align macros required for SSE.
+#ifdef _IRR_SSE
+	#ifdef _IRR_WINDOWS_API_
+		#if defined(__MINGW32__) || (defined (_MSC_VER) && _MSC_VER < 1300)
+			#define _IRR_ALIGN16(x) x
+		#else
+			#define _IRR_ALIGN16(x) __declspec(align(16)) x
+		#endif
+	#else
+		#define _IRR_ALIGN16(x) x __attribute__ ((aligned(16)))
+	#endif
+#else
+	#define _IRR_ALIGN16(x) x
 #endif
 
 // Some cleanup and standard stuff

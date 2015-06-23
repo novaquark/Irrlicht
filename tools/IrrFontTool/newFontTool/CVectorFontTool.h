@@ -767,16 +767,23 @@ public:
 		for (u32 g=0;g<groups.size(); ++g)
 		{
 			STriangleList &t = groups[g].triangles;
-			core::array<S3DVertex> verts;
-			verts.clear();
+
+			scene::CVertexBuffer<S3DVertex> vertexBuffer;
+			scene::CIndexBuffer indexBuffer(video::EIT_16BIT);
+
 			for(u32 v=0; v< t.positions.size(); ++v)
 			{
-				verts.push_back(S3DVertex(
-							-t.positions[v].X, -t.positions[v].Y, -100,
-							0,0,1,SColor(255,255,255,255),0,0));
+				S3DVertex vtx(-t.positions[v].X, -t.positions[v].Y, -100, 0,0,1,SColor(255,255,255,255),0,0);
+
+				vertexBuffer.addVertex(&vtx);
 			}
 
-			device->getVideoDriver()->drawIndexedTriangleList(verts.pointer(),verts.size(),t.indexes.pointer(), t.indexes.size()/3 );
+			for(u32 i=0; i< t.indexes.size(); ++i)
+			{
+				indexBuffer.addIndex(t.indexes[i]);
+			}
+
+			device->getVideoDriver()->drawIndexedTriangleList(&vertexBuffer, &indexBuffer, device->getVideoDriver()->getVertexDescriptor(0), t.indexes.size() / 3);
 		}
 	}
 

@@ -9,7 +9,7 @@
 #include "COgreMeshFileLoader.h"
 #include "CMeshTextureLoader.h"
 #include "os.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "SAnimatedMesh.h"
 #include "IReadFile.h"
 #include "fast_atof.h"
@@ -64,8 +64,8 @@ namespace
 }
 
 //! Constructor
-COgreMeshFileLoader::COgreMeshFileLoader(io::IFileSystem* fs, video::IVideoDriver* driver)
-: FileSystem(fs), Driver(driver), SwapEndian(false), Mesh(0), NumUV(0)
+COgreMeshFileLoader::COgreMeshFileLoader(io::IFileSystem* fs, scene::ISceneManager* smgr)
+: FileSystem(fs), SceneManager(smgr), Driver(smgr->getVideoDriver()), SwapEndian(false), Mesh(0), NumUV(0)
 {
 
 	#ifdef _DEBUG
@@ -157,7 +157,7 @@ IAnimatedMesh* COgreMeshFileLoader::createMesh(io::IReadFile* file)
 		else
 		{
 			for (u32 i=0; i<Mesh->getMeshBufferCount(); ++i)
-				((SMeshBuffer*)Mesh->getMeshBuffer(i))->recalculateBoundingBox();
+				((IMeshBuffer*)Mesh->getMeshBuffer(i))->recalculateBoundingBox();
 
 			((SMesh*)Mesh)->recalculateBoundingBox();
 			SAnimatedMesh* am = new SAnimatedMesh();
@@ -492,16 +492,19 @@ void COgreMeshFileLoader::composeMeshBufferMaterial(scene::IMeshBuffer* mb, cons
 }
 
 
-scene::SMeshBuffer* COgreMeshFileLoader::composeMeshBuffer(const core::array<s32>& indices, const OgreGeometry& geom)
+scene::CMeshBuffer<video::S3DVertex>* COgreMeshFileLoader::composeMeshBuffer(const core::array<s32>& indices, const OgreGeometry& geom)
 {
-	scene::SMeshBuffer *mb=new scene::SMeshBuffer();
+	CMeshBuffer<video::S3DVertex> *mb=new CMeshBuffer<video::S3DVertex>(Driver->getVertexDescriptor(0));
 
 	u32 i;
-	mb->Indices.set_used(indices.size());
+	mb->getIndexBuffer()->set_used(indices.size());
 	for (i=0; i<indices.size(); ++i)
-		mb->Indices[i]=indices[i];
+		mb->getIndexBuffer()->setIndex(i, indices[i]);
 
-	mb->Vertices.set_used(geom.NumVertex);
+	mb->getVertexBuffer()->set_used(geom.NumVertex);
+
+	video::S3DVertex* Vertices = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
+
 	for (i=0; i<geom.Elements.size(); ++i)
 	{
 		if (geom.Elements[i].Semantic==1) //Pos
@@ -514,8 +517,8 @@ scene::SMeshBuffer* COgreMeshFileLoader::composeMeshBuffer(const core::array<s32
 					u32 ePos=geom.Elements[i].Offset;
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						mb->Vertices[k].Color=mb->Material.DiffuseColor;
-						mb->Vertices[k].Pos.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						Vertices[k].Color = mb->getMaterial().DiffuseColor;
+						Vertices[k].Pos.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
 						ePos += eSize;
 					}
 				}
@@ -532,7 +535,7 @@ scene::SMeshBuffer* COgreMeshFileLoader::composeMeshBuffer(const core::array<s32
 					u32 ePos=geom.Elements[i].Offset;
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						mb->Vertices[k].Normal.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						Vertices[k].Normal.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
 						ePos += eSize;
 					}
 				}
@@ -549,7 +552,7 @@ scene::SMeshBuffer* COgreMeshFileLoader::composeMeshBuffer(const core::array<s32
 					u32 ePos=geom.Elements[i].Offset;
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						mb->Vertices[k].TCoords.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1]);
+						Vertices[k].TCoords.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1]);
 						ePos += eSize;
 					}
 				}
@@ -560,16 +563,18 @@ scene::SMeshBuffer* COgreMeshFileLoader::composeMeshBuffer(const core::array<s32
 }
 
 
-scene::SMeshBufferLightMap* COgreMeshFileLoader::composeMeshBufferLightMap(const core::array<s32>& indices, const OgreGeometry& geom)
+scene::CMeshBuffer<video::S3DVertex2TCoords>* COgreMeshFileLoader::composeMeshBufferLightMap(const core::array<s32>& indices, const OgreGeometry& geom)
 {
-	scene::SMeshBufferLightMap *mb=new scene::SMeshBufferLightMap();
+	CMeshBuffer<video::S3DVertex2TCoords> *mb=new CMeshBuffer<video::S3DVertex2TCoords>(Driver->getVertexDescriptor(1));
 
 	u32 i;
-	mb->Indices.set_used(indices.size());
+	mb->getIndexBuffer()->set_used(indices.size());
 	for (i=0; i<indices.size(); ++i)
-		mb->Indices[i]=indices[i];
+		mb->getIndexBuffer()->setIndex(i, indices[i]);
 
-	mb->Vertices.set_used(geom.NumVertex);
+	mb->getVertexBuffer()->set_used(geom.NumVertex);
+
+	video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)mb->getVertexBuffer()->getVertices();
 
 	for (i=0; i<geom.Elements.size(); ++i)
 	{
@@ -583,8 +588,8 @@ scene::SMeshBufferLightMap* COgreMeshFileLoader::composeMeshBufferLightMap(const
 					u32 ePos=geom.Elements[i].Offset;
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						mb->Vertices[k].Color=mb->Material.DiffuseColor;
-						mb->Vertices[k].Pos.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						Vertices[k].Color = mb->getMaterial().DiffuseColor;
+						Vertices[k].Pos.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
 						ePos += eSize;
 					}
 				}
@@ -601,7 +606,7 @@ scene::SMeshBufferLightMap* COgreMeshFileLoader::composeMeshBufferLightMap(const
 					u32 ePos=geom.Elements[i].Offset;
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						mb->Vertices[k].Normal.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						Vertices[k].Normal.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
 						ePos += eSize;
 					}
 				}
@@ -620,11 +625,11 @@ scene::SMeshBufferLightMap* COgreMeshFileLoader::composeMeshBufferLightMap(const
 					const bool secondCoord = (eSize>ePos+3);
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						mb->Vertices[k].TCoords.set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
+						Vertices[k].TCoords.set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
 						if (secondCoord)
-							mb->Vertices[k].TCoords2.set(geom.Buffers[j].Data[ePos+2], geom.Buffers[j].Data[ePos+3]);
+							Vertices[k].TCoords2.set(geom.Buffers[j].Data[ePos+2], geom.Buffers[j].Data[ePos+3]);
 						else
-							mb->Vertices[k].TCoords2.set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
+							Vertices[k].TCoords2.set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
 						ePos += eSize;
 					}
 				}
@@ -638,22 +643,24 @@ scene::SMeshBufferLightMap* COgreMeshFileLoader::composeMeshBufferLightMap(const
 
 scene::IMeshBuffer* COgreMeshFileLoader::composeMeshBufferSkinned(scene::CSkinnedMesh& mesh, const core::array<s32>& indices, const OgreGeometry& geom)
 {
-	scene::SSkinMeshBuffer *mb=mesh.addMeshBuffer();
+	IMeshBuffer* mb = 0;
+
 	if (NumUV>1)
-	{
-		mb->convertTo2TCoords();
-		mb->Vertices_2TCoords.set_used(geom.NumVertex);
-	}
+		mb = new CMeshBuffer<video::S3DVertex2TCoords>(Driver->getVertexDescriptor(1));
 	else
-		mb->Vertices_Standard.set_used(geom.NumVertex);
+		mb = new CMeshBuffer<video::S3DVertex>(Driver->getVertexDescriptor(0));
+
+	mesh.addMeshBuffer(mb);
+
+	mb->getVertexBuffer()->set_used(geom.NumVertex);
 
 	u32 i;
-	mb->Indices.set_used(indices.size());
+	mb->getIndexBuffer()->set_used(indices.size());
 	for (i=0; i<indices.size(); i+=3)
 	{
-		mb->Indices[i+0]=indices[i+2];
-		mb->Indices[i+1]=indices[i+1];
-		mb->Indices[i+2]=indices[i+0];
+		mb->getIndexBuffer()->setIndex(i+0, indices[i+2]);
+		mb->getIndexBuffer()->setIndex(i+1, indices[i+1]);
+		mb->getIndexBuffer()->setIndex(i+2, indices[i+0]);
 	}
 
 	for (i=0; i<geom.Elements.size(); ++i)
@@ -669,10 +676,18 @@ scene::IMeshBuffer* COgreMeshFileLoader::composeMeshBufferSkinned(scene::CSkinne
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
 						if (NumUV>1)
-							mb->Vertices_2TCoords[k].Color=mb->Material.DiffuseColor;
+						{
+							video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)mb->getVertexBuffer()->getVertices();
+							Vertices[k].Color=mb->getMaterial().DiffuseColor;
+							Vertices[k].Pos.set(-geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						}
 						else
-							mb->Vertices_Standard[k].Color=mb->Material.DiffuseColor;
-						mb->getPosition(k).set(-geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						{
+							video::S3DVertex* Vertices = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
+							Vertices[k].Color=mb->getMaterial().DiffuseColor;
+							Vertices[k].Pos.set(-geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						}
+
 						ePos += eSize;
 					}
 				}
@@ -689,7 +704,17 @@ scene::IMeshBuffer* COgreMeshFileLoader::composeMeshBufferSkinned(scene::CSkinne
 					u32 ePos=geom.Elements[i].Offset;
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						mb->getNormal(k).set(-geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						if (NumUV>1)
+						{
+							video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)mb->getVertexBuffer()->getVertices();
+							Vertices[k].Normal.set(-geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						}
+						else
+						{
+							video::S3DVertex* Vertices = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
+							Vertices[k].Normal.set(-geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
+						}
+
 						ePos += eSize;
 					}
 				}
@@ -708,20 +733,30 @@ scene::IMeshBuffer* COgreMeshFileLoader::composeMeshBufferSkinned(scene::CSkinne
 					const bool secondCoord = (eSize>ePos+3);
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						mb->getTCoords(k).set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
 						if (NumUV>1)
 						{
+							video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)mb->getVertexBuffer()->getVertices();
+							Vertices[k].TCoords.set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
+							
 							if (secondCoord)
-								mb->Vertices_2TCoords[k].TCoords2.set(geom.Buffers[j].Data[ePos+2], geom.Buffers[j].Data[ePos+3]);
+								Vertices[k].TCoords2.set(geom.Buffers[j].Data[ePos+2], geom.Buffers[j].Data[ePos+3]);
 							else
-								mb->Vertices_2TCoords[k].TCoords2.set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
+								Vertices[k].TCoords2.set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
 						}
+						else
+						{
+							video::S3DVertex* Vertices = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
+							Vertices[k].TCoords.set(geom.Buffers[j].Data[ePos], geom.Buffers[j].Data[ePos+1]);
+						}
+
 						ePos += eSize;
 					}
 				}
 			}
 		}
 	}
+
+	mb->drop();
 
 	return mb;
 }

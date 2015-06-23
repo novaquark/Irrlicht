@@ -76,7 +76,7 @@ void CTriangleSelector::createFromMesh(const IMesh* mesh)
 	const u32 cnt = mesh->getMeshBufferCount();
 	u32 totalFaceCount = 0;
 	for (u32 j=0; j<cnt; ++j)
-		totalFaceCount += mesh->getMeshBuffer(j)->getIndexCount();
+		totalFaceCount += mesh->getMeshBuffer(j)->getIndexBuffer()->getIndexCount();
 	totalFaceCount /= 3;
 	Triangles.set_used(totalFaceCount);
 
@@ -96,15 +96,26 @@ void CTriangleSelector::updateFromMesh(const IMesh* mesh) const
 	for (u32 i = 0; i < meshBuffers; ++i)
 	{
 		IMeshBuffer* buf = mesh->getMeshBuffer(i);
-		u32 idxCnt = buf->getIndexCount();
-		const u16* indices = buf->getIndices();
+		u32 idxCnt = buf->getIndexBuffer()->getIndexCount();
+		
+		video::IVertexAttribute* attribute = buf->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+		if(!attribute)
+			continue;
+
+		u8* offset = static_cast<u8*>(buf->getVertexBuffer()->getVertices());
+		offset += attribute->getOffset();
 
 		for (u32 index = 0; index < idxCnt; index += 3)
 		{
+			core::vector3df* position0 = (core::vector3df*)(offset + buf->getVertexBuffer()->getVertexSize() * buf->getIndexBuffer()->getIndex(index+0));
+			core::vector3df* position1 = (core::vector3df*)(offset + buf->getVertexBuffer()->getVertexSize() * buf->getIndexBuffer()->getIndex(index+1));
+			core::vector3df* position2 = (core::vector3df*)(offset + buf->getVertexBuffer()->getVertexSize() * buf->getIndexBuffer()->getIndex(index+2));
+
 			core::triangle3df& tri = Triangles[triangleCount++];
-			tri.pointA = buf->getPosition(indices[index + 0]);
-			tri.pointB = buf->getPosition(indices[index + 1]);
-			tri.pointC = buf->getPosition(indices[index + 2]);
+			tri.pointA = *position0;
+			tri.pointB = *position1;
+			tri.pointC = *position2;
 			BoundingBox.addInternalPoint(tri.pointA);
 			BoundingBox.addInternalPoint(tri.pointB);
 			BoundingBox.addInternalPoint(tri.pointC);

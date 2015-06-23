@@ -8,7 +8,7 @@
 #include "irrArray.h"
 #include "IBoneSceneNode.h"
 #include "IAnimatedMesh.h"
-#include "SSkinMeshBuffer.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -70,10 +70,6 @@ namespace scene
 
 		//! Preforms a software skin on this mesh based of joint positions
 		virtual void skinMesh() = 0;
-
-		//! converts the vertex type of all meshbuffers to tangents.
-		/** E.g. used for bump mapping. */
-		virtual void convertMeshToTangents() = 0;
 
 		//! Allows to enable hardware skinning.
 		/* This feature is not implementated in Irrlicht yet */
@@ -181,7 +177,7 @@ namespace scene
 		//these functions will use the needed arrays, set values, etc to help the loaders
 
 		//! exposed for loaders: to add mesh buffers
-		virtual core::array<SSkinMeshBuffer*>& getMeshBuffers() = 0;
+		virtual core::array<IMeshBuffer*>& getMeshBuffers() = 0;
 
 		//! exposed for loaders: joints list
 		virtual core::array<SJoint*>& getAllJoints() = 0;
@@ -193,7 +189,7 @@ namespace scene
 		virtual void finalize() = 0;
 
 		//! Adds a new meshbuffer to the mesh, access it as last one
-		virtual SSkinMeshBuffer* addMeshBuffer() = 0;
+		virtual void addMeshBuffer(IMeshBuffer* buffer) = 0;
 
 		//! Adds a new joint to the mesh, access it as last one
 		virtual SJoint* addJoint(SJoint *parent=0) = 0;

@@ -11,6 +11,10 @@
 
 namespace irr
 {
+namespace video
+{
+	class IVideoDriver;
+}
 namespace scene
 {
 
@@ -18,6 +22,8 @@ namespace scene
 class CSTLMeshFileLoader : public IMeshLoader
 {
 public:
+	//! Constructor
+	CSTLMeshFileLoader(video::IVideoDriver* pDriver);
 
 	//! returns true if the file maybe is able to be loaded by this class
 	//! based on the file extension (i.e. ".stl")
@@ -40,6 +46,8 @@ private:
 
 	//! Read 3d vector of floats
 	void getNextVector(io::IReadFile* file, core::vector3df& vec, bool binary) const;
+
+	video::IVideoDriver* Driver;
 };
 
 } // end namespace scene

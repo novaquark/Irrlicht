@@ -278,10 +278,11 @@ int main()
 		EMF_FOG_ENABLE to true to enable fog in the room.
 		*/
 
-		scene::IMesh* tangentMesh = smgr->getMeshManipulator()->
-				createMeshWithTangents(roomMesh->getMesh(0));
+		// Create tangents.
+		for(u32 l = 0; l < roomMesh->getMesh(0)->getMeshBufferCount(); ++l)
+			smgr->getMeshManipulator()->createTangents<video::S3DVertexTangents>(roomMesh->getMesh(0)->getMeshBuffer(l), driver->getVertexDescriptor(2), false);
 
-		room = smgr->addMeshSceneNode(tangentMesh);
+		room = smgr->addMeshSceneNode(roomMesh);
 		room->setMaterialTexture(0,
 				driver->getTexture("../../media/rockwall.jpg"));
 		room->setMaterialTexture(1, normalMap);
@@ -294,9 +295,6 @@ int main()
 		room->setMaterialType(video::EMT_PARALLAX_MAP_SOLID);
 		// adjust height for parallax effect
 		room->getMaterial(0).MaterialTypeParam = 1.f / 64.f;
-
-		// drop mesh because we created it with a create.. call.
-		tangentMesh->drop();
 	}
 
 	/*
@@ -314,22 +312,19 @@ int main()
 	scene::IAnimatedMesh* earthMesh = smgr->getMesh("../../media/earth.x");
 	if (earthMesh)
 	{
-		//perform various task with the mesh manipulator
-		scene::IMeshManipulator *manipulator = smgr->getMeshManipulator();
-
-		// create mesh copy with tangent informations from original earth.x mesh
-		scene::IMesh* tangentSphereMesh =
-			manipulator->createMeshWithTangents(earthMesh->getMesh(0));
+		// Create tangents.
+		for(u32 l = 0; l < earthMesh->getMesh(0)->getMeshBufferCount(); ++l)
+			smgr->getMeshManipulator()->createTangents<video::S3DVertexTangents>(earthMesh->getMesh(0)->getMeshBuffer(l), driver->getVertexDescriptor(2), false);
 
 		// set the alpha value of all vertices to 200
-		manipulator->setVertexColorAlpha(tangentSphereMesh, 200);
+		smgr->getMeshManipulator()->setVertexColorAlpha(earthMesh, 200);
 
 		// scale the mesh by factor 50
 		core::matrix4 m;
 		m.setScale ( core::vector3df(50,50,50) );
-		manipulator->transform( tangentSphereMesh, m );
+		smgr->getMeshManipulator()->transform( earthMesh, m );
 
-		earth = smgr->addMeshSceneNode(tangentSphereMesh);
+		earth = smgr->addMeshSceneNode(earthMesh);
 
 		earth->setPosition(core::vector3df(-70,130,45));
 
@@ -350,9 +345,6 @@ int main()
 			smgr->createRotationAnimator(core::vector3df(0,0.1f,0));
 		earth->addAnimator(anim);
 		anim->drop();
-
-		// drop mesh because we created it with a create.. call.
-		tangentSphereMesh->drop();
 	}
 
 	/*

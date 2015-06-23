@@ -209,6 +209,11 @@ int main()
 		psFileName = "../../media/d3d8.psh";
 		vsFileName = "../../media/d3d8.vsh";
 		break;
+	case video::EDT_DIRECT3D11:
+		UseHighLevelShaders = true;
+		psFileName = "../../media/d3d11.hlsl";
+		vsFileName = psFileName; // both shaders are in the same file
+		break;
 	case video::EDT_DIRECT3D9:
 		if (UseHighLevelShaders)
 		{

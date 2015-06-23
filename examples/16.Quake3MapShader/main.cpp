@@ -192,7 +192,19 @@ int IRRCALLCONV main(int argc, char* argv[])
 	if (mesh)
 	{
 		scene::IMesh * const geometry = mesh->getMesh(quake3::E_Q3_MESH_GEOMETRY);
-		node = smgr->addOctreeSceneNode(geometry, 0, -1, 4096);
+
+		switch(geometry->getMeshBuffer(0)->getVertexBuffer()->getVertexSize())
+		{
+		case sizeof(video::S3DVertex):
+			node = smgr->addOctreeSceneNode<video::S3DVertex>(geometry, 0, -1, 4096);
+			break;
+		case sizeof(video::S3DVertex2TCoords):
+			node = smgr->addOctreeSceneNode<video::S3DVertex2TCoords>(geometry, 0, -1, 4096);
+			break;
+		case sizeof(video::S3DVertexTangents):
+			node = smgr->addOctreeSceneNode<video::S3DVertexTangents>(geometry, 0, -1, 4096);
+			break;
+		}
 	}
 
 	// create an event receiver for making screenshots
@@ -331,6 +343,7 @@ int IRRCALLCONV main(int argc, char* argv[])
 			break;
 		case video::EDT_DIRECT3D8:
 		case video::EDT_DIRECT3D9:
+		case video::EDT_DIRECT3D11:
 			gui->addImage(driver->getTexture("directxlogo.png"), pos);
 			break;
 	}

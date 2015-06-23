@@ -6,7 +6,7 @@
 #include "IVideoDriver.h"
 #include "ISceneManager.h"
 #include "S3DVertex.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "os.h"
 #include "CShadowVolumeSceneNode.h"
 

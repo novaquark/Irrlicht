@@ -79,7 +79,11 @@ void GameData::setDefault ()
 
 	// default deviceParam;
 #if defined ( _IRR_WINDOWS_ )
+#if defined (_IRR_COMPILE_WITH_DIRECT3D_11_)
+	deviceParam.DriverType = EDT_DIRECT3D11;
+#else
 	deviceParam.DriverType = EDT_DIRECT3D9;
+#endif
 #else
 	deviceParam.DriverType = EDT_OPENGL;
 #endif
@@ -677,6 +681,7 @@ void CQuake3EventHandler::CreateGUI()
 
 	env->addStaticText ( L"VideoDriver:", rect<s32>( dim.Width - 400, 24, dim.Width - 310, 40 ),false, false, gui.Window, -1, false );
 	gui.VideoDriver = env->addComboBox(rect<s32>( dim.Width - 300, 24, dim.Width - 10, 40 ),gui.Window);
+	gui.VideoDriver->addItem(L"Direct3D 11", EDT_DIRECT3D11 );
 	gui.VideoDriver->addItem(L"Direct3D 9.0c", EDT_DIRECT3D9 );
 	gui.VideoDriver->addItem(L"Direct3D 8.1", EDT_DIRECT3D8 );
 	gui.VideoDriver->addItem(L"OpenGL 1.5", EDT_OPENGL);
@@ -997,7 +1002,6 @@ void CQuake3EventHandler::dropMap ()
 {
 	IVideoDriver * driver = Game->Device->getVideoDriver();
 
-	driver->removeAllHardwareBuffers ();
 	driver->removeAllTextures ();
 
 	Player[0].shutdown ();
@@ -1073,7 +1077,19 @@ void CQuake3EventHandler::LoadMap ( const stringw &mapName, s32 collision )
 	//s32 minimalNodes = b0 ? core::s32_max ( 2048, b0->getVertexCount() / 32 ) : 2048;
 	s32 minimalNodes = 2048;
 
-	MapParent = smgr->addOctreeSceneNode(geometry, 0, -1, minimalNodes);
+	switch(geometry->getMeshBuffer(0)->getVertexBuffer()->getVertexSize())
+	{
+	case sizeof(video::S3DVertex):
+		MapParent = smgr->addOctreeSceneNode<video::S3DVertex>(geometry, 0, -1, minimalNodes);
+		break;
+	case sizeof(video::S3DVertex2TCoords):
+		MapParent = smgr->addOctreeSceneNode<video::S3DVertex2TCoords>(geometry, 0, -1, minimalNodes);
+		break;
+	case sizeof(video::S3DVertexTangents):
+		MapParent = smgr->addOctreeSceneNode<video::S3DVertexTangents>(geometry, 0, -1, minimalNodes);
+		break;
+	}
+
 	MapParent->setName ( mapName );
 	if ( Meta )
 	{

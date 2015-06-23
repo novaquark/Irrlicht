@@ -34,8 +34,8 @@ const char OPENGL_PARALLAX_MAP_VSH[] =
 	"ATTRIB InColor = vertex.color;\n"\
 	"ATTRIB InNormal = vertex.normal;\n"\
 	"ATTRIB InTexCoord = vertex.texcoord[0];\n"\
-	"ATTRIB InTangent = vertex.texcoord[1];\n"\
-	"ATTRIB InBinormal = vertex.texcoord[2];\n"\
+	"ATTRIB InTangent = vertex.attrib[4];\n"\
+	"ATTRIB InBinormal = vertex.attrib[5];\n"\
 	"\n"\
 	"#output\n"\
 	"OUTPUT OutPos = result.position;\n"\

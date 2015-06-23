@@ -16,9 +16,9 @@
 #include "IMesh.h"
 #include "IMeshBuffer.h"
 #include "IMeshSceneNode.h"
+#include "CVertexDescriptor.h"
 #include "CFPSCounter.h"
 #include "S3DVertex.h"
-#include "SVertexIndex.h"
 #include "SLight.h"
 #include "SExposedVideoData.h"
 
@@ -54,6 +54,8 @@ namespace video
 				core::rect<s32>* sourceRect=0) _IRR_OVERRIDE_;
 
 		virtual bool endScene() _IRR_OVERRIDE_;
+
+		virtual bool createVertexDescriptors();
 
 		//! Disable a feature of the driver.
 		virtual void disableFeature(E_VIDEO_DRIVER_FEATURE feature, bool flag=true) _IRR_OVERRIDE_;
@@ -117,12 +119,6 @@ namespace video
 
 		//! gets the area of the current viewport
 		virtual const core::rect<s32>& getViewPort() const _IRR_OVERRIDE_;
-
-		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType=EVT_STANDARD, scene::E_PRIMITIVE_TYPE pType=scene::EPT_TRIANGLES,
-				E_INDEX_TYPE iType=EIT_16BIT) _IRR_OVERRIDE_;
 
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -380,58 +376,18 @@ namespace video
 		virtual void drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length=10.f,
 			SColor color=0xffffffff) _IRR_OVERRIDE_;
 
-	protected:
-		struct SHWBufferLink
-		{
-			SHWBufferLink(const scene::IMeshBuffer *_MeshBuffer)
-				:MeshBuffer(_MeshBuffer),
-				ChangedID_Vertex(0),ChangedID_Index(0),LastUsed(0),
-				Mapped_Vertex(scene::EHM_NEVER),Mapped_Index(scene::EHM_NEVER)
-			{
-				if (MeshBuffer)
-					MeshBuffer->grab();
-			}
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName) _IRR_OVERRIDE_;
 
-			virtual ~SHWBufferLink()
-			{
-				if (MeshBuffer)
-					MeshBuffer->drop();
-			}
+		virtual IVertexDescriptor* getVertexDescriptor(u32 id) const;
 
-			const scene::IMeshBuffer *MeshBuffer;
-			u32 ChangedID_Vertex;
-			u32 ChangedID_Index;
-			u32 LastUsed;
-			scene::E_HARDWARE_MAPPING Mapped_Vertex;
-			scene::E_HARDWARE_MAPPING Mapped_Index;
-		};
+		virtual IVertexDescriptor* getVertexDescriptor(const core::stringc& pName) const;
 
-		//! Gets hardware buffer link from a meshbuffer (may create or update buffer)
-		virtual SHWBufferLink *getBufferLink(const scene::IMeshBuffer* mb);
+		virtual u32 getVertexDescriptorCount() const;
 
-		//! updates hardware buffer if needed  (only some drivers can)
-		virtual bool updateHardwareBuffer(SHWBufferLink *HWBuffer) {return false;}
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer) _IRR_OVERRIDE_;
 
-		//! Draw hardware buffer (only some drivers can)
-		virtual void drawHardwareBuffer(SHWBufferLink *HWBuffer) {}
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer) _IRR_OVERRIDE_;
 
-		//! Delete hardware buffer
-		virtual void deleteHardwareBuffer(SHWBufferLink *HWBuffer);
-
-		//! Create hardware buffer from mesh (only some drivers can)
-		virtual SHWBufferLink *createHardwareBuffer(const scene::IMeshBuffer* mb) {return 0;}
-
-	public:
-		//! Remove hardware buffer
-		virtual void removeHardwareBuffer(const scene::IMeshBuffer* mb) _IRR_OVERRIDE_;
-
-		//! Remove all hardware buffers
-		virtual void removeAllHardwareBuffers() _IRR_OVERRIDE_;
-
-		//! Update all hardware buffers, remove unused ones
-		virtual void updateAllHardwareBuffers();
-
-		//! is vbo recommended on this mesh?
 		virtual bool isHardwareBufferRecommend(const scene::IMeshBuffer* mb);
 
 		//! Create occlusion query.
@@ -693,6 +649,9 @@ namespace video
 		//! deletes all material renderers
 		void deleteMaterialRenders();
 
+		//! deletes all vertex descriptors
+		void deleteVertexDescriptors();
+
 		// prints renderer version
 		void printVersion();
 
@@ -712,7 +671,7 @@ namespace video
 
 			return (f32) getAverage ( p[(y * pitch) + x] );
 		}
-
+	
 		struct SSurface
 		{
 			video::ITexture* Surface;
@@ -731,17 +690,11 @@ namespace video
 
 		struct SDummyTexture : public ITexture
 		{
-			SDummyTexture(const io::path& name) : ITexture(name), size(0,0) {};
+			SDummyTexture(const io::path& name) : ITexture(name) {};
 
 			virtual void* lock(E_TEXTURE_LOCK_MODE mode=ETLM_READ_WRITE, u32 mipmapLevel=0) _IRR_OVERRIDE_ { return 0; }
 			virtual void unlock()_IRR_OVERRIDE_ {}
-			virtual const core::dimension2d<u32>& getOriginalSize() const _IRR_OVERRIDE_ { return size; }
-			virtual const core::dimension2d<u32>& getSize() const _IRR_OVERRIDE_ { return size; }
-			virtual E_DRIVER_TYPE getDriverType() const _IRR_OVERRIDE_ { return video::EDT_NULL; }
-			virtual ECOLOR_FORMAT getColorFormat() const _IRR_OVERRIDE_ { return video::ECF_A1R5G5B5; }
-			virtual u32 getPitch() const _IRR_OVERRIDE_ { return 0; }
 			virtual void regenerateMipMapLevels(void* mipmapData=0) _IRR_OVERRIDE_ {}
-			core::dimension2d<u32> size;
 		};
 		core::array<SSurface> Textures;
 
@@ -800,15 +753,13 @@ namespace video
 			u32 Result;
 			u32 Run;
 		};
+
 		core::array<SOccQuery> OcclusionQueries;
 
 		core::array<video::IImageLoader*> SurfaceLoader;
 		core::array<video::IImageWriter*> SurfaceWriter;
 		core::array<SLight> Lights;
 		core::array<SMaterialRenderer> MaterialRenderers;
-
-		//core::array<SHWBufferLink*> HWBufferLinks;
-		core::map< const scene::IMeshBuffer* , SHWBufferLink* > HWBufferMap;
 
 		io::IFileSystem* FileSystem;
 
@@ -843,6 +794,8 @@ namespace video
 		bool PixelFog;
 		bool RangeFog;
 		bool AllowZWriteOnTransparent;
+
+		irr::core::array<CVertexDescriptor*> VertexDescriptor;
 
 		bool FeatureEnabled[video::EVDF_COUNT];
 	};

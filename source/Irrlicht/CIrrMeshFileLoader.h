@@ -10,8 +10,7 @@
 #include "IVideoDriver.h"
 #include "irrString.h"
 #include "SMesh.h"
-#include "SMeshBuffer.h"
-#include "CDynamicMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "ISceneManager.h"
 
 namespace irr
@@ -70,10 +69,10 @@ private:
 	void readFloatsInsideElement(io::IXMLReader* reader, f32* floats, u32 count);
 
 	//! read the mesh buffers
-	void readMeshBuffer(io::IXMLReader* reader, int vertexCount, CDynamicMeshBuffer* sbuffer);
+	void readMeshBuffer(io::IXMLReader* reader, int vertexCount, IMeshBuffer* sbuffer);
 
 	//! read indices
-	void readIndices(io::IXMLReader* reader, int indexCount, IIndexBuffer& indices);
+	void readIndices(io::IXMLReader* reader, int indexCount, IIndexBuffer* indices);
 
 
 	// member variables

@@ -91,9 +91,8 @@ int main(int argc, char* argv[])
 	}
 	if (createTangents)
 	{
-		IMesh* tmp = device->getSceneManager()->getMeshManipulator()->createMeshWithTangents(mesh);
-		mesh->drop();
-		mesh=tmp;
+		for(u32 l = 0; l < mesh->getMeshBufferCount(); ++l)
+			device->getSceneManager()->getMeshManipulator()->createTangents<video::S3DVertexTangents>(mesh->getMeshBuffer(l), device->getVideoDriver()->getVertexDescriptor(2), false);
 	}
 	IMeshWriter* mw = device->getSceneManager()->createMeshWriter(type);
 	IWriteFile* file = device->getFileSystem()->createAndWriteFile(argv[destmesh]);

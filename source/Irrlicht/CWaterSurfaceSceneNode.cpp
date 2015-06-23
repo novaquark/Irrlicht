@@ -9,6 +9,7 @@
 #include "S3DVertex.h"
 #include "SMesh.h"
 #include "os.h"
+#include "IVideoDriver.h"
 
 namespace irr
 {
@@ -57,12 +58,33 @@ void CWaterSurfaceSceneNode::OnAnimate(u32 timeMs)
 
 		for (u32 b=0; b<meshBufferCount; ++b)
 		{
-			const u32 vtxCnt = Mesh->getMeshBuffer(b)->getVertexCount();
+			video::IVertexAttribute* attribute = Mesh->getMeshBuffer(b)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+			video::IVertexAttribute* attributeOriginal = OriginalMesh->getMeshBuffer(b)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+			if(!attribute || !attributeOriginal)
+				continue;
+
+			u8* offset = static_cast<u8*>(Mesh->getMeshBuffer(b)->getVertexBuffer()->getVertices());
+			offset += attribute->getOffset();
+
+			u8* offsetOriginal = static_cast<u8*>(OriginalMesh->getMeshBuffer(b)->getVertexBuffer()->getVertices());
+			offsetOriginal += attributeOriginal->getOffset();
+
+			u32 vtxCnt = Mesh->getMeshBuffer(b)->getVertexBuffer()->getVertexCount();
+
+			if(OriginalMesh->getMeshBuffer(b)->getVertexBuffer()->getVertexCount() < vtxCnt)
+				vtxCnt = OriginalMesh->getMeshBuffer(b)->getVertexBuffer()->getVertexCount();
 
 			for (u32 i=0; i<vtxCnt; ++i)
-				Mesh->getMeshBuffer(b)->getPosition(i).Y = addWave(
-					OriginalMesh->getMeshBuffer(b)->getPosition(i),
-					time);
+			{
+				core::vector3df* position = (core::vector3df*)offset;
+				core::vector3df* positionOriginal = (core::vector3df*)offsetOriginal;
+
+				(*position).Y = addWave(*positionOriginal, time);
+
+				offset += Mesh->getMeshBuffer(b)->getVertexBuffer()->getVertexSize();
+				offsetOriginal += OriginalMesh->getMeshBuffer(b)->getVertexBuffer()->getVertexSize();
+			}
 		}// end for all mesh buffers
 		Mesh->setDirty(scene::EBT_VERTEX);
 
@@ -79,7 +101,8 @@ void CWaterSurfaceSceneNode::setMesh(IMesh* mesh)
 		return;
 	if (OriginalMesh)
 		OriginalMesh->drop();
-	IMesh* clone = SceneManager->getMeshManipulator()->createMeshCopy(mesh);
+	IMesh* clone = SceneManager->getMeshManipulator()->createMeshCopy<video::S3DVertex>(mesh,
+		SceneManager->getVideoDriver()->getVertexDescriptor(0));
 	OriginalMesh = mesh;
 	Mesh = clone;
 	Mesh->setHardwareMappingHint(scene::EHM_STATIC, scene::EBT_INDEX);
@@ -118,7 +141,8 @@ void CWaterSurfaceSceneNode::deserializeAttributes(io::IAttributes* in, io::SAtt
 
 	if (Mesh)
 	{
-		IMesh* clone = SceneManager->getMeshManipulator()->createMeshCopy(Mesh);
+		IMesh* clone = SceneManager->getMeshManipulator()->createMeshCopy<video::S3DVertex>(Mesh,
+			SceneManager->getVideoDriver()->getVertexDescriptor(0));
 		OriginalMesh = Mesh;
 		Mesh = clone;
 	}

@@ -57,8 +57,16 @@ EMESH_WRITER_TYPE COBJMeshWriter::getType() const
 //! writes a mesh
 bool COBJMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 flags)
 {
-	if (!file)
+	if (!file || !mesh)
 		return false;
+
+	for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+	{
+		u32 Size = mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexSize();
+
+		if(Size != sizeof(video::S3DVertex) && Size != sizeof(video::S3DVertex2TCoords) && Size != sizeof(video::S3DVertexTangents))
+			return false;
+	}
 
 	os::Printer::log("Writing mesh", file->getFileName());
 
@@ -80,34 +88,52 @@ bool COBJMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 	{
 		core::stringc num(i+1);
 		IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-		if (buffer && buffer->getVertexCount())
+		if (buffer && buffer->getVertexBuffer()->getVertexCount())
 		{
 			file->write("g grp", 5);
 			file->write(num.c_str(), num.size());
 			file->write("\n",1);
 
 			u32 j;
-			const u32 vertexCount = buffer->getVertexCount();
-			for (j=0; j<vertexCount; ++j)
-			{
-				file->write("v ",2);
-				getVectorAsStringLine(buffer->getPosition(j), num);
-				file->write(num.c_str(), num.size());
-			}
+			const u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
-			for (j=0; j<vertexCount; ++j)
-			{
-				file->write("vt ",3);
-				getVectorAsStringLine(buffer->getTCoords(j), num);
-				file->write(num.c_str(), num.size());
-			}
+			u8* Vertices = static_cast<u8*>(buffer->getVertexBuffer()->getVertices());
 
-			for (j=0; j<vertexCount; ++j)
-			{
-				file->write("vn ",3);
-				getVectorAsStringLine(buffer->getNormal(j), num);
-				file->write(num.c_str(), num.size());
-			}
+			video::IVertexAttribute* attribute = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+			if(attribute)
+				for (j=0; j<vertexCount; ++j)
+				{
+					core::vector3df* value = (core::vector3df*)(Vertices + attribute->getOffset() + buffer->getVertexBuffer()->getVertexSize() * j);
+
+					file->write("v ",2);
+					getVectorAsStringLine(*value, num);
+					file->write(num.c_str(), num.size());
+				}
+
+			attribute = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1);
+
+			if(attribute)
+				for (j=0; j<vertexCount; ++j)
+				{
+					core::vector2df* value = (core::vector2df*)(Vertices + attribute->getOffset() + buffer->getVertexBuffer()->getVertexSize() * j);
+
+					file->write("vt ",3);
+					getVectorAsStringLine(*value, num);
+					file->write(num.c_str(), num.size());
+				}
+
+			attribute = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TANGENT);
+
+			if(attribute)
+				for (j=0; j<vertexCount; ++j)
+				{
+					core::vector3df* value = (core::vector3df*)(Vertices + attribute->getOffset() + buffer->getVertexBuffer()->getVertexSize() * j);
+
+					file->write("vn ",3);
+					getVectorAsStringLine(*value, num);
+					file->write(num.c_str(), num.size());
+				}
 
 			file->write("usemtl mat",10);
 			num = "";
@@ -127,11 +153,11 @@ bool COBJMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 			file->write(num.c_str(), num.size());
 			file->write("\n",1);
 
-			const u32 indexCount = buffer->getIndexCount();
+			const u32 indexCount = buffer->getIndexBuffer()->getIndexCount();
 			for (j=0; j<indexCount; j+=3)
 			{
 				file->write("f ",2);
-				num = core::stringc(buffer->getIndices()[j+2]+allVertexCount);
+				num = core::stringc(buffer->getIndexBuffer()->getIndex(j+2)+allVertexCount);
 				file->write(num.c_str(), num.size());
 				file->write("/",1);
 				file->write(num.c_str(), num.size());
@@ -139,7 +165,7 @@ bool COBJMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 				file->write(num.c_str(), num.size());
 				file->write(" ",1);
 
-				num = core::stringc(buffer->getIndices()[j+1]+allVertexCount);
+				num = core::stringc(buffer->getIndexBuffer()->getIndex(j+1)+allVertexCount);
 				file->write(num.c_str(), num.size());
 				file->write("/",1);
 				file->write(num.c_str(), num.size());
@@ -147,7 +173,7 @@ bool COBJMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 				file->write(num.c_str(), num.size());
 				file->write(" ",1);
 
-				num = core::stringc(buffer->getIndices()[j+0]+allVertexCount);
+				num = core::stringc(buffer->getIndexBuffer()->getIndex(j+0)+allVertexCount);
 				file->write(num.c_str(), num.size());
 				file->write("/",1);
 				file->write(num.c_str(), num.size());

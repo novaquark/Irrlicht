@@ -8,6 +8,18 @@ namespace irr
 namespace video
 {
 
+enum E_SHADER_TYPE
+{
+	EST_VERTEX_SHADER = 0,
+	EST_GEOMETRY_SHADER,
+	EST_PIXEL_SHADER,
+	EST_HULL_SHADER,
+	EST_DOMAIN_SHADER,
+	EST_COMPUTE_SHADER,
+
+	EST_COUNT
+};
+
 //! Compile target enumeration for the addHighLevelShaderMaterial() method.
 enum E_VERTEX_SHADER_TYPE
 {
@@ -72,6 +84,8 @@ const c8* const PIXEL_SHADER_TYPE_NAMES[] = {
 enum E_GEOMETRY_SHADER_TYPE
 {
 	EGST_GS_4_0 = 0,
+	EGST_GS_4_1,
+	EGST_GS_5_0,
 
 	//! This is not a type, but a value indicating how much types there are.
 	EGST_COUNT
@@ -80,10 +94,57 @@ enum E_GEOMETRY_SHADER_TYPE
 //! String names for supported geometry shader types
 const c8* const GEOMETRY_SHADER_TYPE_NAMES[] = {
 	"gs_4_0",
+	"gs_4_1",
+	"gs_5_0",
 	0 };
 
+//! Enum for supported domain shader types
+enum E_DOMAIN_SHADER_TYPE
+{
+	EDST_DS_5_0 = 0,
 
-} // end namespace video
+	//! This is not a type, but a value indicating how much types there are.
+	EDST_COUNT
+};
+
+//! String names for supported domain shader types
+const c8* const DOMAIN_SHADER_TYPE_NAMES[] = {
+	"ds_5_0",
+	0 };
+
+//! Enum for supported hull shader types
+enum E_HULL_SHADER_TYPE
+{
+	EHST_HS_5_0 = 0,
+
+	//! This is not a type, but a value indicating how much types there are.
+	EHST_COUNT
+};
+
+//! String names for supported hull shader types
+const c8* const HULL_SHADER_TYPE_NAMES[] = {
+	"hs_5_0",
+	0 };
+
+//! Enum for supported compute shader types
+enum E_COMPUTE_SHADER_TYPE
+{
+	ECST_CS_4_0 = 0,
+	ECST_CS_4_1,
+	ECST_CS_5_0,
+
+	//! This is not a type, but a value indicating how much types there are.
+	ECST_COUNT
+};
+
+//! String names for supported compute shader types
+const c8* const COMPUTE_SHADER_TYPE_NAMES[] = {
+	"cs_4_0",
+	"cs_4_1",
+	"cs_5_0",
+	0 };
+
+}// end namespace video
 } // end namespace irr
 
 #endif // __E_SHADER_TYPES_H_INCLUDED__

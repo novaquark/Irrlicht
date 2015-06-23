@@ -220,7 +220,7 @@ public:
 				scene::ISceneNode* node = 0;
 
 				if (mesh)
-					node = SceneManager->addOctreeSceneNode(mesh->getMesh(0), 0, -1, 1024);
+					node = SceneManager->addOctreeSceneNode<video::S3DVertex2TCoords>(mesh->getMesh(0), 0, -1, 1024);
 				if (node)
 					node->setPosition(core::vector3df(-1300,-144,-1249));
 				SceneManager->addCameraSceneNodeFPS();

@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2012 Nikolaus Gebhardt
+// Copyright (C) 2012 Patryk Nadrowski
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -7,46 +7,78 @@
 
 #include "IReferenceCounted.h"
 #include "irrArray.h"
-#include "S3DVertex.h"
+#include "IHardwareBuffer.h"
 
 namespace irr
 {
 namespace scene
 {
-
 	class IVertexBuffer : public virtual IReferenceCounted
 	{
 	public:
-		virtual void* getData() =0;
-		virtual video::E_VERTEX_TYPE getType() const =0;
-		virtual void setType(video::E_VERTEX_TYPE vertexType) =0;
-		virtual u32 stride() const =0;
-		virtual u32 size() const =0;
-		virtual void push_back(const video::S3DVertex &element) =0;
-		virtual video::S3DVertex& operator [](const u32 index) const =0;
-		virtual video::S3DVertex& getLast() =0;
-		virtual void set_used(u32 usedNow) =0;
-		virtual void reallocate(u32 new_size) =0;
-		virtual u32 allocated_size() const =0;
-		virtual video::S3DVertex* pointer() =0;
+		IVertexBuffer() : HardwareBuffer(0)
+		{
+		}
 
-		//! get the current hardware mapping hint
-		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const =0;
+		virtual ~IVertexBuffer()
+		{
+			if (HardwareBuffer)
+				HardwareBuffer->drop();
+		}
 
-		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint( E_HARDWARE_MAPPING NewMappingHint ) =0;
+		virtual void clear() = 0;
 
-		//! flags the meshbuffer as changed, reloads hardware buffers
-		virtual void setDirty() =0;
+		virtual void set_used(u32 used) = 0;
 
-		//! Get the currently used ID for identification of changes.
-		/** This shouldn't be used for anything outside the VideoDriver. */
+		virtual void reallocate(u32 size) = 0;
+
+		virtual u32 allocated_size() const = 0;
+
+		virtual s32 linear_reverse_search(const void* element) const = 0;
+
+		virtual void fill(u32 used) = 0;
+
+		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const = 0;
+
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING hardwareMappingHint) = 0;
+
+		virtual void addVertex(const void* vertex) = 0;
+
+		virtual const void* getVertex(u32 id) const = 0;
+
+		virtual void* getVertices() = 0;
+
+		virtual u32 getVertexCount() const = 0;
+
+		virtual u32 getVertexSize() const = 0;
+
+		virtual void setVertex(u32 id, const void* vertex) = 0;
+
+		virtual void setDirty() = 0;
+
 		virtual u32 getChangedID() const = 0;
+
+		video::IHardwareBuffer* getHardwareBuffer() const
+		{
+			return HardwareBuffer;
+		}
+
+		// externalMemoryHandler parameter is used only by hardware buffers.
+		void setHardwareBuffer(video::IHardwareBuffer* hardwareBuffer, bool externalMemoryHandler = false)
+		{
+			if (!externalMemoryHandler && HardwareBuffer)
+				HardwareBuffer->drop();
+
+			HardwareBuffer = hardwareBuffer;
+
+			if (!externalMemoryHandler && HardwareBuffer)
+				HardwareBuffer->grab();
+		}
+
+	protected:
+		video::IHardwareBuffer* HardwareBuffer;
 	};
-
-
-} // end namespace scene
-} // end namespace irr
+}
+}
 
 #endif
-

@@ -326,6 +326,12 @@ namespace irr
 #else
 					return false;
 #endif
+				case video::EDT_DIRECT3D11:
+#ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
+					return true;
+#else
+					return false;
+#endif
 				case video::EDT_OPENGL:
 #ifdef _IRR_COMPILE_WITH_OPENGL_
 					return true;

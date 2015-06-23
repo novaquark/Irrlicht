@@ -48,6 +48,7 @@ public:
 		DriverOptions.insert(L"Software", EDT_SOFTWARE);
 		DriverOptions.insert(L"OpenGL", EDT_OPENGL);
 		DriverOptions.insert(L"Direct3D9", EDT_DIRECT3D9);
+		DriverOptions.insert(L"Direct3D11", EDT_DIRECT3D11);
 
 		//some resolution options
 		ResolutionOptions.insert(L"640x480", dimension2du(640,480));
@@ -55,7 +56,11 @@ public:
 		ResolutionOptions.insert(L"1024x768", dimension2du(1024,768));
 
 		//our preferred defaults
+#if defined (_IRR_COMPILE_WITH_DIRECT3D_11_)
+		SettingMap.insert(L"driver", L"Direct3D11");
+#else
 		SettingMap.insert(L"driver", L"Direct3D9");
+#endif
 		SettingMap.insert(L"resolution", L"640x480");
 		SettingMap.insert(L"fullscreen", L"0"); //0 is false
 	}

@@ -9,7 +9,7 @@
 #include "IReadFile.h"
 #include "IFileSystem.h"
 #include "SMesh.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 #include "IVideoDriver.h"
 #include "irrString.h"
 #include "ISceneManager.h"
@@ -323,10 +323,10 @@ namespace scene
 		void loadFogs    (tBSPLump* l, io::IReadFile* file); // load the shaders
 
 		//bi-quadratic bezier patches
-		void createCurvedSurface_bezier(SMeshBufferLightMap* meshBuffer,
+		void createCurvedSurface_bezier(CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer,
 				s32 faceIndex, s32 patchTesselation, s32 storevertexcolor);
 
-		void createCurvedSurface_nosubdivision(SMeshBufferLightMap* meshBuffer,
+		void createCurvedSurface_nosubdivision(CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer,
 				s32 faceIndex, s32 patchTesselation, s32 storevertexcolor);
 
 		struct S3DVertex2TCoords_64
@@ -363,7 +363,7 @@ namespace scene
 
 		struct SBezier
 		{
-			SMeshBufferLightMap *Patch;
+			CMeshBuffer<video::S3DVertex2TCoords> *Patch;
 			S3DVertex2TCoords_64 control[9];
 
 			void tesselate(s32 level);

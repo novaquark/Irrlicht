@@ -10,7 +10,7 @@
 #define __C_TERRAIN_SCENE_NODE_H__
 
 #include "ITerrainSceneNode.h"
-#include "IDynamicMeshBuffer.h"
+#include "IMeshBuffer.h"
 #include "path.h"
 
 namespace irr
@@ -137,9 +137,9 @@ namespace scene
 		virtual IMeshBuffer* getRenderBuffer() _IRR_OVERRIDE_ { return RenderBuffer; }
 
 		//! Gets the meshbuffer data based on a specified Level of Detail.
-		//! \param mb: A reference to an IDynamicMeshBuffer object
+		//! \param mb: A reference to an IMeshBuffer object
 		//! \param LOD: The Level Of Detail you want the indices from.
-		virtual void getMeshBufferForLOD(IDynamicMeshBuffer& mb, s32 LOD=0) const _IRR_OVERRIDE_;
+		virtual void getMeshBufferForLOD(IMeshBuffer& mb, s32 LOD=0) const _IRR_OVERRIDE_;
 
 		//! Gets the indices for a specified patch at a specified Level of Detail.
 		//! \param indices: A reference to an array of u32 indices.
@@ -268,10 +268,10 @@ namespace scene
 		u32 getIndex(const s32 PatchX, const s32 PatchZ, const s32 PatchIndex, u32 vX, u32 vZ) const;
 
 		//! smooth the terrain
-		void smoothTerrain(IDynamicMeshBuffer* mb, s32 smoothFactor);
+		void smoothTerrain(IMeshBuffer* mb, s32 smoothFactor);
 
 		//! calculate smooth normals
-		void calculateNormals(IDynamicMeshBuffer* mb);
+		void calculateNormals(IMeshBuffer* mb);
 
 		//! create patches, stuff that needs to only be done once for patches goes here.
 		void createPatches();
@@ -294,7 +294,7 @@ namespace scene
 		STerrainData TerrainData;
 		SMesh* Mesh;
 
-		IDynamicMeshBuffer *RenderBuffer;
+		IMeshBuffer *RenderBuffer;
 
 		u32 VerticesToRender;
 		u32 IndicesToRender;

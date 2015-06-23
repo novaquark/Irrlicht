@@ -98,6 +98,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <OutputFile>..\..\bin\Win32-VisualStudio\17.HelloWorld_Mobile.exe</OutputFile>
@@ -119,6 +120,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <OutputFile>..\..\bin\Win64-VisualStudio\17.HelloWorld_Mobile.exe</OutputFile>
@@ -138,6 +140,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <OutputFile>..\..\bin\Win32-VisualStudio\17.HelloWorld_Mobile.exe</OutputFile>
@@ -159,6 +162,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
     </ClCompile>
     <Link>
       <OutputFile>..\..\bin\Win64-VisualStudio\17.HelloWorld_Mobile.exe</OutputFile>

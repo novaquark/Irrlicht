@@ -49,10 +49,13 @@ class CSampleSceneNode : public scene::ISceneNode
 
 	/*
 	First, we declare some member variables:
-	The bounding box, 4 vertices, and the material of the tetraeder.
+	The bounding box, vertex buffer, index buffer and the material of the tetraeder.
 	*/
 	core::aabbox3d<f32> Box;
-	video::S3DVertex Vertices[4];
+	scene::IVertexBuffer* VertexBuffer;
+	scene::IIndexBuffer* IndexBuffer;
+	scene::CMeshBuffer<video::S3DVertex>* MeshBuffer;
+	video::IVertexDescriptor* Descriptor;
 	video::SMaterial Material;
 
 	/*
@@ -68,17 +71,50 @@ public:
 	CSampleSceneNode(scene::ISceneNode* parent, scene::ISceneManager* mgr, s32 id)
 		: scene::ISceneNode(parent, mgr, id)
 	{
+		Descriptor = mgr->getVideoDriver()->getVertexDescriptor(0);
+
+		VertexBuffer = new scene::CVertexBuffer<video::S3DVertex>();
+		IndexBuffer = new scene::CIndexBuffer(video::EIT_16BIT);
+		MeshBuffer = new scene::CMeshBuffer<video::S3DVertex>(Descriptor);
+
 		Material.Wireframe = false;
 		Material.Lighting = false;
 
-		Vertices[0] = video::S3DVertex(0,0,10, 1,1,0,
-				video::SColor(255,0,255,255), 0, 1);
-		Vertices[1] = video::S3DVertex(10,0,-10, 1,0,0,
-				video::SColor(255,255,0,255), 1, 1);
-		Vertices[2] = video::S3DVertex(0,20,0, 0,1,1,
-				video::SColor(255,255,255,0), 1, 0);
-		Vertices[3] = video::S3DVertex(-10,0,-10, 0,0,1,
-				video::SColor(255,0,255,0), 0, 0);
+		video::S3DVertex Vertices[4];
+
+		Vertices[0] = video::S3DVertex(0,0,10, 1,1,0, video::SColor(255,0,255,255), 0, 1);
+		Vertices[1] = video::S3DVertex(10,0,-10, 1,0,0, video::SColor(255,255,0,255), 1, 1);
+		Vertices[2] = video::S3DVertex(0,20,0, 0,1,1, video::SColor(255,255,255,0), 1, 0);
+		Vertices[3] = video::S3DVertex(-10,0,-10, 0,0,1, video::SColor(255,0,255,0), 0, 0);
+
+		for (s32 i = 0; i<4; ++i)
+			VertexBuffer->addVertex(&Vertices[i]);
+			
+	/*
+	Indices into the 'Vertices' array. A triangle needs 3 vertices 
+	so you have to pass the 3 corresponding indices for each triangle to 
+	tell which of the vertices should be used for it.
+	*/
+
+		IndexBuffer->addIndex(0);
+		IndexBuffer->addIndex(2);
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(2);
+		IndexBuffer->addIndex(1);
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(1);
+		IndexBuffer->addIndex(0);
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(2);
+		IndexBuffer->addIndex(0);
+		IndexBuffer->addIndex(1);
+
+	/*
+	Append Vertex and Index buffers to the Mesh buffer.
+	*/
+
+		MeshBuffer->setVertexBuffer(VertexBuffer, 0);
+		MeshBuffer->setIndexBuffer(IndexBuffer);
 
 	/*
 	The Irrlicht Engine needs to know the bounding box of a scene node.
@@ -91,6 +127,12 @@ public:
 		Box.reset(Vertices[0].Pos);
 		for (s32 i=1; i<4; ++i)
 			Box.addInternalPoint(Vertices[i].Pos);
+	}
+
+	~CSampleSceneNode()
+	{
+		VertexBuffer->drop();
+		IndexBuffer->drop();
 	}
 
 	/*
@@ -126,15 +168,12 @@ public:
 	*/
 	virtual void render()
 	{
-		/* Indices into the 'Vertices' array. A triangle needs 3 vertices 
-		so you have to pass the 3 corresponding indices for each triangle to 
-		tell which of the vertices should be used for it.	*/
-		u16 indices[] = {	0,2,3, 2,1,3, 1,0,3, 2,0,1	}; 
 		video::IVideoDriver* driver = SceneManager->getVideoDriver();
 
 		driver->setMaterial(Material);
 		driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
-		driver->drawVertexPrimitiveList(&Vertices[0], 4, &indices[0], 4, video::EVT_STANDARD, scene::EPT_TRIANGLES, video::EIT_16BIT);
+
+		driver->drawMeshBuffer(MeshBuffer);
 	}
 
 	/*

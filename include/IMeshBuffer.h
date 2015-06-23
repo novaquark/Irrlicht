@@ -9,7 +9,9 @@
 #include "SMaterial.h"
 #include "aabbox3d.h"
 #include "S3DVertex.h"
-#include "SVertexIndex.h"
+#include "IVertexDescriptor.h"
+#include "CVertexBuffer.h"
+#include "CIndexBuffer.h"
 #include "EHardwareBufferFlags.h"
 #include "EPrimitiveTypes.h"
 
@@ -39,6 +41,82 @@ namespace scene
 	class IMeshBuffer : public virtual IReferenceCounted
 	{
 	public:
+		IMeshBuffer(video::IVertexDescriptor* vertexDescriptor) : VertexDescriptor(vertexDescriptor), VertexBufferCompatible(true),
+			IndexBuffer(0), PrimitiveType(EPT_TRIANGLES), BoundingBoxNeedsRecalculated(true)
+		{
+		}
+
+		virtual ~IMeshBuffer() {}
+
+		virtual video::IVertexDescriptor* getVertexDescriptor() const = 0;
+
+		virtual bool setVertexDescriptor(video::IVertexDescriptor* vertexDescriptor) = 0;
+
+		virtual bool addVertexBuffer(IVertexBuffer* vertexBuffer) = 0;
+
+		virtual IVertexBuffer* getVertexBuffer(u32 id = 0) const = 0;
+
+		virtual u32 getVertexBufferCount() const = 0;
+
+		virtual void removeVertexBuffer(u32 id) = 0;
+
+		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer, u32 id = 0) = 0;
+
+		//! Inform if stored vertex buffers have the same vertex descriptors.
+		bool isVertexBufferCompatible() const
+		{
+			return VertexBufferCompatible;
+		}
+
+		virtual IIndexBuffer* getIndexBuffer() const = 0;
+
+		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer) = 0;
+		
+		//! Get primitive count.
+		u32 getPrimitiveCount() const
+		{
+			u32 primitiveCount = 0;
+
+			switch (PrimitiveType)
+			{
+			case EPT_POINTS:
+			case EPT_POINT_SPRITES:
+				primitiveCount = IndexBuffer->getIndexCount();
+				break;
+			case scene::EPT_LINE_STRIP:
+				primitiveCount = IndexBuffer->getIndexCount() - 1;
+				break;
+			case scene::EPT_LINE_LOOP:
+				primitiveCount = IndexBuffer->getIndexCount();
+				break;
+			case scene::EPT_LINES:
+				primitiveCount = IndexBuffer->getIndexCount() / 2;
+				break;
+			case scene::EPT_TRIANGLE_STRIP:
+				primitiveCount = IndexBuffer->getIndexCount() - 2;
+				break;
+			case scene::EPT_TRIANGLE_FAN:
+				primitiveCount = IndexBuffer->getIndexCount() - 2;
+				break;
+			case scene::EPT_TRIANGLES:
+				primitiveCount = IndexBuffer->getIndexCount() / 3;
+				break;
+			}
+
+			return primitiveCount;
+		}
+
+		//! Get primitive type.
+		E_PRIMITIVE_TYPE getPrimitiveType() const
+		{
+			return PrimitiveType;
+		}
+
+		//! Set primitive type.
+		void setPrimitiveType(E_PRIMITIVE_TYPE primitiveType)
+		{
+			PrimitiveType = primitiveType;
+		}
 
 		//! Get the material of this meshbuffer
 		/** \return Material of this buffer. */
@@ -48,102 +126,76 @@ namespace scene
 		/** \return Material of this buffer. */
 		virtual const video::SMaterial& getMaterial() const = 0;
 
-		//! Get type of vertex data which is stored in this meshbuffer.
-		/** \return Vertex type of this buffer. */
-		virtual video::E_VERTEX_TYPE getVertexType() const = 0;
-
-		//! Get access to vertex data. The data is an array of vertices.
-		/** Which vertex type is used can be determined by getVertexType().
-		\return Pointer to array of vertices. */
-		virtual const void* getVertices() const = 0;
-
-		//! Get access to vertex data. The data is an array of vertices.
-		/** Which vertex type is used can be determined by getVertexType().
-		\return Pointer to array of vertices. */
-		virtual void* getVertices() = 0;
-
-		//! Get amount of vertices in meshbuffer.
-		/** \return Number of vertices in this buffer. */
-		virtual u32 getVertexCount() const = 0;
-
-		//! Get type of index data which is stored in this meshbuffer.
-		/** \return Index type of this buffer. */
-		virtual video::E_INDEX_TYPE getIndexType() const =0;
-
-		//! Get access to Indices.
-		/** \return Pointer to indices array. */
-		virtual const u16* getIndices() const = 0;
-
-		//! Get access to Indices.
-		/** \return Pointer to indices array. */
-		virtual u16* getIndices() = 0;
-
-		//! Get amount of indices in this meshbuffer.
-		/** \return Number of indices in this buffer. */
-		virtual u32 getIndexCount() const = 0;
-
 		//! Get the axis aligned bounding box of this meshbuffer.
 		/** \return Axis aligned bounding box of this buffer. */
 		virtual const core::aabbox3df& getBoundingBox() const = 0;
 
-		//! Set axis aligned bounding box
-		/** \param box User defined axis aligned bounding box to use
-		for this buffer. */
-		virtual void setBoundingBox(const core::aabbox3df& box) = 0;
+		//! Get the axis aligned bounding box of this meshbuffer.
+		/** \return Axis aligned bounding box of this buffer. */
+		virtual core::aabbox3df& getBoundingBox() = 0;
+
+		//! Call this after changing the positions of any vertex.
+		virtual void boundingBoxNeedsRecalculated() = 0;
 
 		//! Recalculates the bounding box. Should be called if the mesh changed.
 		virtual void recalculateBoundingBox() = 0;
 
-		//! returns position of vertex i
-		virtual const core::vector3df& getPosition(u32 i) const = 0;
-
-		//! returns position of vertex i
-		virtual core::vector3df& getPosition(u32 i) = 0;
-
-		//! returns normal of vertex i
-		virtual const core::vector3df& getNormal(u32 i) const = 0;
-
-		//! returns normal of vertex i
-		virtual core::vector3df& getNormal(u32 i) = 0;
-
-		//! returns texture coord of vertex i
-		virtual const core::vector2df& getTCoords(u32 i) const = 0;
-
-		//! returns texture coord of vertex i
-		virtual core::vector2df& getTCoords(u32 i) = 0;
-
-		//! Append the vertices and indices to the current buffer
-		/** Only works for compatible vertex types.
-		\param vertices Pointer to a vertex array.
-		\param numVertices Number of vertices in the array.
-		\param indices Pointer to index array.
-		\param numIndices Number of indices in array. */
-		virtual void append(const void* const vertices, u32 numVertices, const u16* const indices, u32 numIndices) = 0;
+		virtual void append(IVertexBuffer* vertexBuffer, u32 vertexBufferID, IIndexBuffer* indexBuffer) = 0;
 
 		//! Append the meshbuffer to the current buffer
 		/** Only works for compatible vertex types
-		\param other Buffer to append to this one. */
-		virtual void append(const IMeshBuffer* const other) = 0;
+		\param meshBuffer Buffer to append to this one. */
+		virtual void append(IMeshBuffer* meshBuffer) = 0;
 
 		//! get the current hardware mapping hint
-		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex() const = 0;
+		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex(u32 id = 0) const = 0;
 
 		//! get the current hardware mapping hint
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Index() const = 0;
 
 		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint( E_HARDWARE_MAPPING newMappingHint, E_BUFFER_TYPE buffer=EBT_VERTEX_AND_INDEX ) = 0;
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX, u32 id = 0) = 0;
 
 		//! flags the meshbuffer as changed, reloads hardware buffers
-		virtual void setDirty(E_BUFFER_TYPE buffer=EBT_VERTEX_AND_INDEX) = 0;
+		virtual void setDirty(E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX, u32 id = 0) = 0;
 
 		//! Get the currently used ID for identification of changes.
 		/** This shouldn't be used for anything outside the VideoDriver. */
-		virtual u32 getChangedID_Vertex() const = 0;
+		virtual u32 getChangedID_Vertex(u32 id = 0) const = 0;
 
 		//! Get the currently used ID for identification of changes.
 		/** This shouldn't be used for anything outside the VideoDriver. */
 		virtual u32 getChangedID_Index() const = 0;
+
+		virtual core::matrix4& getTransformation() = 0;
+
+	protected:
+		//! Vertex descriptor.
+		video::IVertexDescriptor* VertexDescriptor;
+
+		// Inform if mesh buffers store compatible vertex buffers and vertex descriptor.
+		bool VertexBufferCompatible;
+
+		//! Vertex buffer array.
+		core::array<scene::IVertexBuffer*> VertexBuffer;
+
+		//! Index buffer.
+		scene::IIndexBuffer* IndexBuffer;
+
+		// Primitive type.
+		E_PRIMITIVE_TYPE PrimitiveType;
+
+		//! Material.
+		video::SMaterial Material;
+
+		// Inform if bounding box need recalculation.
+		bool BoundingBoxNeedsRecalculated;
+
+		//! Bounding box.
+		core::aabbox3d<f32> BoundingBox;
+
+		// Transformation.
+		core::matrix4 Transformation;
 	};
 
 } // end namespace scene

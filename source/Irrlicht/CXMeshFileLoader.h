@@ -64,7 +64,7 @@ public:
 
 		core::array<u16> IndexCountPerFace; // default 3, but could be more
 
-		core::array<scene::SSkinMeshBuffer*> Buffers;
+		core::array<scene::IMeshBuffer*> Buffers;
 
 		core::array<video::S3DVertex> Vertices;
 		core::array<core::vector2df> TCoords2;

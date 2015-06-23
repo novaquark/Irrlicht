@@ -18,7 +18,7 @@
 #include "SMesh.h"
 #include "IVideoDriver.h"
 #include "SAnimatedMesh.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 
 #ifdef _DEBUG
 #define _IRR_DEBUG_CSM_LOADER_
@@ -416,8 +416,9 @@ namespace scene
 			if ( SceneManager->getParameters()->existsAttribute(CSM_TEXTURE_PATH) )
 				getMeshTextureLoader()->setTexturePath( SceneManager->getParameters()->getAttributeAsString(CSM_TEXTURE_PATH) );
 		}
+		
+		scene::SMesh *mesh = new scene::SMesh();
 
-		scene::SMesh *pMesh = new scene::SMesh();
 		video::IVideoDriver* driver = SceneManager->getVideoDriver();
 
 		for(u32 l = 0; l<csmFile->getLightMapCount(); l++)
@@ -453,16 +454,16 @@ namespace scene
 				lmapName += "LMAP_";
 				lmapName += io::path(surface->getLightMapId());
 
-				scene::SMeshBufferLightMap *buffer = new scene::SMeshBufferLightMap();
-				buffer->Material.setTexture(0, texture);
+				CMeshBuffer<video::S3DVertex2TCoords>* buffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
+				buffer->getMaterial().setTexture(0, texture);
 				if (surface->getLightMapId())
 				{
-					buffer->Material.setTexture(1, driver->getTexture(lmapName));
-					buffer->Material.Lighting = false;
-					buffer->Material.MaterialType = video::EMT_LIGHTMAP_ADD;
+					buffer->getMaterial().setTexture(1, driver->getTexture(lmapName));
+					buffer->getMaterial().Lighting = false;
+					buffer->getMaterial().MaterialType = video::EMT_LIGHTMAP_ADD;
 				}
 
-				buffer->Vertices.reallocate(surface->getVertexCount());
+				buffer->getVertexBuffer()->reallocate(surface->getVertexCount());
 				for(u32 v = 0; v < surface->getVertexCount(); ++v)
 				{
 					const Vertex& vtxPtr = surface->getVertexAt(v);
@@ -473,26 +474,26 @@ namespace scene
 					vtx.TCoords.set(vtxPtr.getTextureCoordinates().X, 1.f-vtxPtr.getTextureCoordinates().Y);
 					vtx.TCoords2.set(vtxPtr.getLightMapCoordinates().X, 1.f-vtxPtr.getLightMapCoordinates().Y);
 
-					buffer->Vertices.push_back(vtx);
+					buffer->getVertexBuffer()->addVertex(&vtx);
 				}
 
-				buffer->Indices.reallocate(surface->getTriangleCount()*3);
+				buffer->getIndexBuffer()->reallocate(surface->getTriangleCount()*3);
 				for(u32 t = 0; t < surface->getTriangleCount(); ++t)
 				{
 					const Triangle& tri = surface->getTriangleAt(t);
-					buffer->Indices.push_back(tri.c);
-					buffer->Indices.push_back(tri.b);
-					buffer->Indices.push_back(tri.a);
+					buffer->getIndexBuffer()->addIndex(tri.c);
+					buffer->getIndexBuffer()->addIndex(tri.b);
+					buffer->getIndexBuffer()->addIndex(tri.a);
 				}
 
 				buffer->recalculateBoundingBox();
-				pMesh->addMeshBuffer(buffer);
+				mesh->addMeshBuffer(buffer);
 				buffer->drop();
 			}
 		}
 
-		pMesh->recalculateBoundingBox();
-		return pMesh;
+		mesh->recalculateBoundingBox();
+		return mesh;
 	}
 
 	void Group::clear()

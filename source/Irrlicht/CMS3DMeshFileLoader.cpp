@@ -328,7 +328,12 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 	if(numMaterials == 0)
 	{
 		// if there are no materials, add at least one buffer
-		AnimatedMesh->addMeshBuffer();
+
+		CMeshBuffer<video::S3DVertex>* meshBuffer = new CMeshBuffer<video::S3DVertex>(Driver->getVertexDescriptor(0));
+
+		AnimatedMesh->addMeshBuffer(meshBuffer);
+
+		meshBuffer->drop();
 	}
 
 	for (i=0; i<numMaterials; ++i)
@@ -354,29 +359,32 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 			return false;
 		}
 
-		scene::SSkinMeshBuffer *tmpBuffer = AnimatedMesh->addMeshBuffer();
+		CMeshBuffer<video::S3DVertex>* tmpBuffer = new CMeshBuffer<video::S3DVertex>(Driver->getVertexDescriptor(0));
+		AnimatedMesh->addMeshBuffer(tmpBuffer);
 
-		tmpBuffer->Material.MaterialType = video::EMT_SOLID;
+		tmpBuffer->getMaterial().MaterialType = video::EMT_SOLID;
 
-		tmpBuffer->Material.AmbientColor = video::SColorf(material->Ambient[0], material->Ambient[1], material->Ambient[2], material->Ambient[3]).toSColor ();
-		tmpBuffer->Material.DiffuseColor = video::SColorf(material->Diffuse[0], material->Diffuse[1], material->Diffuse[2], material->Diffuse[3]).toSColor ();
-		tmpBuffer->Material.EmissiveColor = video::SColorf(material->Emissive[0], material->Emissive[1], material->Emissive[2], material->Emissive[3]).toSColor ();
-		tmpBuffer->Material.SpecularColor = video::SColorf(material->Specular[0], material->Specular[1], material->Specular[2], material->Specular[3]).toSColor ();
-		tmpBuffer->Material.Shininess = material->Shininess;
+		tmpBuffer->getMaterial().AmbientColor = video::SColorf(material->Ambient[0], material->Ambient[1], material->Ambient[2], material->Ambient[3]).toSColor();
+		tmpBuffer->getMaterial().DiffuseColor = video::SColorf(material->Diffuse[0], material->Diffuse[1], material->Diffuse[2], material->Diffuse[3]).toSColor();
+		tmpBuffer->getMaterial().EmissiveColor = video::SColorf(material->Emissive[0], material->Emissive[1], material->Emissive[2], material->Emissive[3]).toSColor();
+		tmpBuffer->getMaterial().SpecularColor = video::SColorf(material->Specular[0], material->Specular[1], material->Specular[2], material->Specular[3]).toSColor();
+		tmpBuffer->getMaterial().Shininess = material->Shininess;
 
 		core::stringc TexturePath(material->Texture);
 		if (TexturePath.trim()!="")
 		{
 			TexturePath=stripPathFromString(file->getFileName(),true) + stripPathFromString(TexturePath,false);
-			tmpBuffer->Material.setTexture(0, Driver->getTexture(TexturePath));
+			tmpBuffer->getMaterial().setTexture(0, Driver->getTexture(TexturePath));
 		}
 
 		core::stringc AlphamapPath=(const c8*)material->Alphamap;
 		if (AlphamapPath.trim()!="")
 		{
 			AlphamapPath=stripPathFromString(file->getFileName(),true) + stripPathFromString(AlphamapPath,false);
-			tmpBuffer->Material.setTexture(2, Driver->getTexture(AlphamapPath));
+			tmpBuffer->getMaterial().setTexture(2, Driver->getTexture(AlphamapPath));
 		}
+
+		tmpBuffer->drop();
 	}
 
 	// animation time
@@ -661,13 +669,13 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 
 	// create vertices and indices, attach them to the joints.
 	video::S3DVertex v;
-	core::array<video::S3DVertex> *Vertices;
-	core::array<u16> Indices;
+	video::S3DVertex* Vertices = 0;
+	core::array<u32> Indices;
 
 	for (i=0; i<numTriangles; ++i)
 	{
 		u32 tmp = groups[triangles[i].GroupIndex].MaterialIdx;
-		Vertices = &AnimatedMesh->getMeshBuffers()[tmp]->Vertices_Standard;
+		Vertices = (video::S3DVertex*)AnimatedMesh->getMeshBuffers()[tmp]->getVertexBuffer()->getVertices();
 
 		for (s32 j = 2; j!=-1; --j)
 		{
@@ -682,7 +690,7 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 
 			if(triangles[i].GroupIndex < groups.size() &&
 					groups[triangles[i].GroupIndex].MaterialIdx < AnimatedMesh->getMeshBuffers().size())
-				v.Color = AnimatedMesh->getMeshBuffers()[groups[triangles[i].GroupIndex].MaterialIdx]->Material.DiffuseColor;
+				v.Color = AnimatedMesh->getMeshBuffers()[groups[triangles[i].GroupIndex].MaterialIdx]->getMaterial().DiffuseColor;
 			else
 				v.Color.set(255,255,255,255);
 
@@ -692,9 +700,9 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 
 			// check if we already have this vertex in our vertex array
 			s32 index = -1;
-			for (u32 iV = 0; iV < Vertices->size(); ++iV)
+			for (u32 iV = 0; iV < AnimatedMesh->getMeshBuffers()[tmp]->getVertexBuffer()->getVertexCount(); ++iV)
 			{
-				if (v == (*Vertices)[iV])
+				if (v == Vertices[iV])
 				{
 					index = (s32)iV;
 					break;
@@ -703,7 +711,7 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 
 			if (index == -1)
 			{
-				index = Vertices->size();
+				index = AnimatedMesh->getMeshBuffers()[tmp]->getVertexBuffer()->getVertexCount();
 				const u32 matidx = groups[triangles[i].GroupIndex].MaterialIdx;
 				if (vertexWeights.size()==0)
 				{
@@ -762,7 +770,7 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 					}
 				}
 
-				Vertices->push_back(v);
+				AnimatedMesh->getMeshBuffers()[tmp]->getVertexBuffer()->addVertex(&v);
 			}
 			Indices.push_back(index);
 		}
@@ -777,11 +785,9 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 		if (grp.MaterialIdx >= AnimatedMesh->getMeshBuffers().size())
 			grp.MaterialIdx = 0;
 
-		core::array<u16>& indices = AnimatedMesh->getMeshBuffers()[grp.MaterialIdx]->Indices;
-
 		for (u32 k=0; k < grp.VertexIds.size(); ++k)
 			for (u32 l=0; l<3; ++l)
-				indices.push_back(Indices[++iIndex]);
+				AnimatedMesh->getMeshBuffers()[grp.MaterialIdx]->getIndexBuffer()->addIndex(Indices[++iIndex]);
 	}
 
 	delete [] buffer;

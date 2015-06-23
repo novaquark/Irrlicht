@@ -812,8 +812,16 @@ void CColladaMeshWriter::writeSceneNode(irr::scene::ISceneNode * node )
 //! writes a mesh
 bool CColladaMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 flags)
 {
-	if (!file)
+	if (!file || !mesh)
 		return false;
+
+	for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+	{
+		u32 Size = mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexSize();
+
+		if(Size != sizeof(video::S3DVertex) && Size != sizeof(video::S3DVertex2TCoords) && Size != sizeof(video::S3DVertexTangents))
+			return false;
+	}
 
 	reset();
 
@@ -1456,13 +1464,13 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 	u32 i=0;
 	for (i=0; i<mesh->getMeshBufferCount(); ++i)
 	{
-		totalVertexCount += mesh->getMeshBuffer(i)->getVertexCount();
+		totalVertexCount += mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount();
 
-		if (hasSecondTextureCoordinates(mesh->getMeshBuffer(i)->getVertexType()))
-			totalTCoords2Count += mesh->getMeshBuffer(i)->getVertexCount();
+		if (mesh->getMeshBuffer(i)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1))
+			totalTCoords2Count += mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount();
 
 		if (!needsTangents)
-			needsTangents = mesh->getMeshBuffer(i)->getVertexType() == video::EVT_TANGENTS;
+			needsTangents = mesh->getMeshBuffer(i)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TANGENT) != 0;
 	}
 
 	SComponentGlobalStartPos* globalIndices = new SComponentGlobalStartPos[mesh->getMeshBufferCount()];
@@ -1483,8 +1491,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		for (i=0; i<mesh->getMeshBufferCount(); ++i)
 		{
 			scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-			video::E_VERTEX_TYPE vtxType = buffer->getVertexType();
-			u32 vertexCount = buffer->getVertexCount();
+			u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
 			globalIndices[i].PosStartIndex = 0;
 
@@ -1493,11 +1500,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 
 			globalIndices[i].PosLastIndex = globalIndices[i].PosStartIndex + vertexCount - 1;
 
-			switch(vtxType)
+			switch(buffer->getVertexBuffer()->getVertexSize())
 			{
-			case video::EVT_STANDARD:
+			case sizeof(video::S3DVertex):
 				{
-					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertices();
+					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Pos);
@@ -1505,9 +1512,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_2TCOORDS:
+			case sizeof(video::S3DVertex2TCoords):
 				{
-					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Pos);
@@ -1515,9 +1522,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_TANGENTS:
+			case sizeof(video::S3DVertexTangents):
 				{
-					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertices();
+					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Pos);
@@ -1573,8 +1580,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		for (i=0; i<mesh->getMeshBufferCount(); ++i)
 		{
 			scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-			video::E_VERTEX_TYPE vtxType = buffer->getVertexType();
-			u32 vertexCount = buffer->getVertexCount();
+			u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
 			globalIndices[i].TCoord0StartIndex = 0;
 
@@ -1583,11 +1589,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 
 			globalIndices[i].TCoord0LastIndex = globalIndices[i].TCoord0StartIndex + vertexCount - 1;
 
-			switch(vtxType)
+			switch(buffer->getVertexBuffer()->getVertexSize())
 			{
-			case video::EVT_STANDARD:
+			case sizeof(video::S3DVertex):
 				{
-					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertices();
+					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeUv(vtx[j].TCoords);
@@ -1595,9 +1601,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_2TCOORDS:
+			case sizeof(video::S3DVertex2TCoords):
 				{
-					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeUv(vtx[j].TCoords);
@@ -1605,9 +1611,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_TANGENTS:
+			case sizeof(video::S3DVertexTangents):
 				{
-					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertices();
+					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeUv(vtx[j].TCoords);
@@ -1660,8 +1666,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		for (i=0; i<mesh->getMeshBufferCount(); ++i)
 		{
 			scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-			video::E_VERTEX_TYPE vtxType = buffer->getVertexType();
-			u32 vertexCount = buffer->getVertexCount();
+			u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
 			globalIndices[i].NormalStartIndex = 0;
 
@@ -1670,11 +1675,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 
 			globalIndices[i].NormalLastIndex = globalIndices[i].NormalStartIndex + vertexCount - 1;
 
-			switch(vtxType)
+			switch(buffer->getVertexBuffer()->getVertexSize())
 			{
-			case video::EVT_STANDARD:
+			case sizeof(video::S3DVertex):
 				{
-					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertices();
+					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Normal);
@@ -1682,9 +1687,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_2TCOORDS:
+			case sizeof(video::S3DVertex2TCoords):
 				{
-					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Normal);
@@ -1692,9 +1697,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_TANGENTS:
+			case sizeof(video::S3DVertexTangents):
 				{
-					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertices();
+					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Normal);
@@ -1751,10 +1756,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 			for (i=0; i<mesh->getMeshBufferCount(); ++i)
 			{
 				scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-				video::E_VERTEX_TYPE vtxType = buffer->getVertexType();
-				u32 vertexCount = buffer->getVertexCount();
+				u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
-				if (hasSecondTextureCoordinates(vtxType))
+				if (buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1))
 				{
 					globalIndices[i].TCoord1StartIndex = 0;
 
@@ -1763,11 +1767,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 
 					globalIndices[i].TCoord1LastIndex = globalIndices[i].TCoord1StartIndex + vertexCount - 1;
 
-					switch(vtxType)
+					switch(buffer->getVertexBuffer()->getVertexSize())
 					{
-					case video::EVT_2TCOORDS:
+					case sizeof(video::S3DVertex2TCoords):
 						{
-							video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+							video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 							for (u32 j=0; j<vertexCount; ++j)
 							{
 								writeVector(vtx[j].TCoords2);
@@ -1830,7 +1834,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 	{
 		scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
 
-		const u32 polyCount = buffer->getIndexCount() / 3;
+		const u32 polyCount = buffer->getIndexBuffer()->getIndexCount() / 3;
 		core::stringw strPolyCount(polyCount);
 		irr::core::stringw strMat(nameForMaterialSymbol(mesh, i));
 
@@ -1845,7 +1849,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		Writer->writeElement(L"input", true, L"semantic", L"NORMAL", L"source", toRef(meshNormalId).c_str(), L"offset", L"2");
 		Writer->writeLineBreak();
 
-		bool has2ndTexCoords = hasSecondTextureCoordinates(buffer->getVertexType());
+		bool has2ndTexCoords = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1) != 0;
 		if (has2ndTexCoords)
 		{
 			// TODO: when working on second uv-set - my suspicion is that this one should be called "TEXCOORD2"
@@ -1868,39 +1872,39 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		for (u32 p=0; p<polyCount; ++p)
 		{
 			strP = "";
-			strP += buffer->getIndices()[(p*3) + 0] + posIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 0) + posIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 0] + tCoordIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 0) + tCoordIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 0] + normalIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 0) + normalIdx;
 			strP += " ";
 			if (has2ndTexCoords)
 			{
-				strP += buffer->getIndices()[(p*3) + 0] + tCoord2Idx;
+				strP += buffer->getIndexBuffer()->getIndex((p*3) + 0) + tCoord2Idx;
 				strP += " ";
 			}
 
-			strP += buffer->getIndices()[(p*3) + 1] + posIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 1) + posIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 1] + tCoordIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 1) + tCoordIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 1] + normalIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 1) + normalIdx;
 			strP += " ";
 			if (has2ndTexCoords)
 			{
-				strP += buffer->getIndices()[(p*3) + 1] + tCoord2Idx;
+				strP += buffer->getIndexBuffer()->getIndex((p*3) + 1) + tCoord2Idx;
 				strP += " ";
 			}
 
-			strP += buffer->getIndices()[(p*3) + 2] + posIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 2) + posIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 2] + tCoordIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 2) + tCoordIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 2] + normalIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 2) + normalIdx;
 			if (has2ndTexCoords)
 			{
 				strP += " ";
-				strP += buffer->getIndices()[(p*3) + 2] + tCoord2Idx;
+				strP += buffer->getIndexBuffer()->getIndex((p*3) + 2) + tCoord2Idx;
 			}
 			strP += " ";
 

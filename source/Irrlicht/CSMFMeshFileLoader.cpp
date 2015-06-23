@@ -9,7 +9,7 @@
 #include "CSMFMeshFileLoader.h"
 #include "CMeshTextureLoader.h"
 #include "SAnimatedMesh.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "IReadFile.h"
 #include "coreutil.h"
 #include "os.h"
@@ -20,7 +20,7 @@ namespace irr
 namespace scene
 {
 
-CSMFMeshFileLoader::CSMFMeshFileLoader(irr::io::IFileSystem* fs, video::IVideoDriver* driver)
+	CSMFMeshFileLoader::CSMFMeshFileLoader(irr::io::IFileSystem* fs, video::IVideoDriver* driver) : Driver(driver)
 {
 	TextureLoader = new CMeshTextureLoader( fs, driver );
 }
@@ -116,24 +116,24 @@ void CSMFMeshFileLoader::loadLimb(io::IReadFile* file, SMesh* mesh, const core::
 	// create mesh buffer if none was found
 	if (i == mesh->MeshBuffers.size())
 	{
-		CMeshBuffer<video::S3DVertex>* mb = new CMeshBuffer<video::S3DVertex>();
-		mb->Material.TextureLayer[0].Texture = texture;
+		CMeshBuffer<video::S3DVertex>* mb = new CMeshBuffer<video::S3DVertex>(Driver->getVertexDescriptor(0));
+		mb->getMaterial().TextureLayer[0].Texture = texture;
 
 		// horribly hacky way to do this, maybe it's in the flags?
 		if (core::hasFileExtension(textureName, "tga", "png"))
-			mb->Material.MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
+			mb->getMaterial().MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
 		else
-			mb->Material.MaterialType = video::EMT_SOLID;
+			mb->getMaterial().MaterialType = video::EMT_SOLID;
 
 		mesh->MeshBuffers.push_back(mb);
 	}
 
 	CMeshBuffer<video::S3DVertex>* mb = (CMeshBuffer<video::S3DVertex>*)mesh->MeshBuffers[i];
 
-	u16 vertexCount, firstVertex = mb->getVertexCount();
+	u32 vertexCount, firstVertex = mb->getVertexBuffer()->getVertexCount();
 
 	io::BinaryFile::read(file, vertexCount);
-	mb->Vertices.reallocate(mb->Vertices.size() + vertexCount);
+	mb->getVertexBuffer()->reallocate(mb->getVertexBuffer()->getVertexCount() + vertexCount);
 
 	// add vertices and set positions
 	for (i=0; i<vertexCount; ++i)
@@ -144,8 +144,10 @@ void CSMFMeshFileLoader::loadLimb(io::IReadFile* file, SMesh* mesh, const core::
 		video::S3DVertex vert;
 		vert.Color = 0xFFFFFFFF;
 		vert.Pos = pos;
-		mb->Vertices.push_back(vert);
+		mb->getVertexBuffer()->addVertex(&vert);
 	}
+
+	video::S3DVertex* Vertices = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
 
 	// set vertex normals
 	for (i=0; i < vertexCount; ++i)
@@ -153,7 +155,7 @@ void CSMFMeshFileLoader::loadLimb(io::IReadFile* file, SMesh* mesh, const core::
 		core::vector3df normal;
 		io::BinaryFile::read(file, normal);
 		transformation.rotateVect(normal);
-		mb->Vertices[firstVertex + i].Normal = normal;
+		Vertices[firstVertex + i].Normal = normal;
 	}
 	// set texture coordinates
 
@@ -161,7 +163,7 @@ void CSMFMeshFileLoader::loadLimb(io::IReadFile* file, SMesh* mesh, const core::
 	{
 		core::vector2df tcoords;
 		io::BinaryFile::read(file, tcoords);
-		mb->Vertices[firstVertex + i].TCoords = tcoords;
+		Vertices[firstVertex + i].TCoords = tcoords;
 	}
 
 	// triangles
@@ -169,13 +171,13 @@ void CSMFMeshFileLoader::loadLimb(io::IReadFile* file, SMesh* mesh, const core::
 	// vertexCount used as temporary
 	io::BinaryFile::read(file, vertexCount);
 	triangleCount=3*vertexCount;
-	mb->Indices.reallocate(mb->Indices.size() + triangleCount);
+	mb->getIndexBuffer()->reallocate(mb->getIndexBuffer()->getIndexCount() + triangleCount);
 
 	for (i=0; i < triangleCount; ++i)
 	{
 		u16 index;
 		io::BinaryFile::read(file, index);
-		mb->Indices.push_back(firstVertex + index);
+		mb->getIndexBuffer()->addIndex(firstVertex + index);
 	}
 
 	// read limbs

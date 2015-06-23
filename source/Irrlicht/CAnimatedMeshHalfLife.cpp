@@ -10,7 +10,7 @@
 #include "CColorConverter.h"
 #include "CImage.h"
 #include "coreutil.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "IVideoDriver.h"
 #include "IFileSystem.h"
 
@@ -390,7 +390,7 @@ void CAnimatedMeshHalfLife::initModel()
 				tex_scale.Y = 1.f/(f32)currentex->height;
 #endif
 
-				SMeshBuffer * buffer = new SMeshBuffer();
+				CMeshBuffer<video::S3DVertex> * buffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
 
 				// count index vertex size	indexcount = mesh->numtris * 3
 				u32 indexCount = 0;
@@ -409,12 +409,11 @@ void CAnimatedMeshHalfLife::initModel()
 				}
 
 				// indices
-				buffer->Indices.set_used ( indexCount );
-				buffer->Vertices.set_used ( vertexCount );
+				buffer->getIndexBuffer()->set_used ( indexCount );
+				buffer->getVertexBuffer()->set_used ( vertexCount );
 
 				// fill in static indices and vertex
-				u16 *index = buffer->Indices.pointer();
-				video::S3DVertex * v = buffer->Vertices.pointer();
+				video::S3DVertex * v = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 
 				// blow up gl_triangle_fan/gl_triangle_strip to indexed triangle list
 				E_PRIMITIVE_TYPE type;
@@ -463,23 +462,23 @@ void CAnimatedMeshHalfLife::initModel()
 						{
 							if ( type == EPT_TRIANGLE_FAN )
 							{
-								index[indexCount+0] = vertexCount;
-								index[indexCount+1] = vertexCount+g+1;
-								index[indexCount+2] = vertexCount+g+2;
+								buffer->getIndexBuffer()->setIndex(indexCount+0, vertexCount);
+								buffer->getIndexBuffer()->setIndex(indexCount+1, vertexCount+g+1);
+								buffer->getIndexBuffer()->setIndex(indexCount+2, vertexCount+g+2);
 							}
 							else
 							{
 								if ( g & 1 )
 								{
-									index[indexCount+0] = vertexCount+g+1;
-									index[indexCount+1] = vertexCount+g+0;
-									index[indexCount+2] = vertexCount+g+2;
+									buffer->getIndexBuffer()->setIndex(indexCount+0, vertexCount+g+1);
+									buffer->getIndexBuffer()->setIndex(indexCount+1, vertexCount+g+0);
+									buffer->getIndexBuffer()->setIndex(indexCount+2, vertexCount+g+2);
 								}
 								else
 								{
-									index[indexCount+0] = vertexCount+g+0;
-									index[indexCount+1] = vertexCount+g+1;
-									index[indexCount+2] = vertexCount+g+2;
+									buffer->getIndexBuffer()->setIndex(indexCount+0, vertexCount+g+0);
+									buffer->getIndexBuffer()->setIndex(indexCount+1, vertexCount+g+1);
+									buffer->getIndexBuffer()->setIndex(indexCount+2, vertexCount+g+2);
 								}
 							}
 
@@ -565,7 +564,7 @@ void CAnimatedMeshHalfLife::buildVertices()
 				const SHalflifeMesh *mesh = (SHalflifeMesh *)((u8*)Header + model->meshindex) + i;
 
 				IMeshBuffer * buffer = MeshIPol->getMeshBuffer ( meshBufferNr++ );
-				video::S3DVertex* v = (video::S3DVertex* ) buffer->getVertices();
+				video::S3DVertex* v = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 
 				tricmd = (s16*)((u8*)Header + mesh->triindex);
 				while ( (c = *(tricmd++)) )

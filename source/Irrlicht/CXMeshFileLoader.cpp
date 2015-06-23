@@ -138,8 +138,17 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 #endif
 		for (i=0; i<mesh->Materials.size(); ++i)
 		{
-			mesh->Buffers.push_back( AnimatedMesh->addMeshBuffer() );
-			mesh->Buffers.getLast()->Material = mesh->Materials[i];
+			IMeshBuffer* meshBuffer = 0;
+
+			if (mesh->TCoords2.size())
+				meshBuffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
+			else
+				meshBuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
+
+			AnimatedMesh->addMeshBuffer(meshBuffer);
+
+			mesh->Buffers.push_back(meshBuffer);
+			mesh->Buffers.getLast()->getMaterial() = mesh->Materials[i];
 
 			if (!mesh->HasSkinning)
 			{
@@ -149,6 +158,8 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 					AnimatedMesh->getAllJoints()[mesh->AttachedJointID]->AttachedMeshes.push_back( AnimatedMesh->getMeshBuffers().size()-1 );
 				}
 			}
+
+			meshBuffer->drop();
 		}
 
 		if (!mesh->FaceMaterialIndices.size())
@@ -164,7 +175,7 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 			{
 				for (u32 id=j*3+0;id<=j*3+2;++id)
 				{
-					mesh->Vertices[ mesh->Indices[id] ].Color = mesh->Buffers[mesh->FaceMaterialIndices[j]]->Material.DiffuseColor;
+					mesh->Vertices[ mesh->Indices[id] ].Color = mesh->Buffers[mesh->FaceMaterialIndices[j]]->getMaterial().DiffuseColor;
 				}
 			}
 		}
@@ -317,19 +328,9 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 					if (verticesLinkBuffer[i] != -1)
 						++vCountArray[verticesLinkBuffer[i]];
 				}
-				if (mesh->TCoords2.size())
-				{
-					for (i=0; i!=mesh->Buffers.size(); ++i)
-					{
-						mesh->Buffers[i]->Vertices_2TCoords.reallocate(vCountArray[i]);
-						mesh->Buffers[i]->VertexType=video::EVT_2TCOORDS;
-					}
-				}
-				else
-				{
-					for (i=0; i!=mesh->Buffers.size(); ++i)
-						mesh->Buffers[i]->Vertices_Standard.reallocate(vCountArray[i]);
-				}
+
+				for (i=0; i!=mesh->Buffers.size(); ++i)
+					mesh->Buffers[i]->getVertexBuffer()->reallocate(vCountArray[i]);
 
 				verticesLinkIndex.set_used(mesh->Vertices.size());
 				// actually store vertices
@@ -338,21 +339,20 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 					// if a vertex is missing for some reason, just skip it
 					if (verticesLinkBuffer[i]==-1)
 						continue;
-					scene::SSkinMeshBuffer *buffer = mesh->Buffers[ verticesLinkBuffer[i] ];
+					scene::IMeshBuffer *buffer = mesh->Buffers[ verticesLinkBuffer[i] ];
+
+					verticesLinkIndex[i] = buffer->getVertexBuffer()->getVertexCount();
 
 					if (mesh->TCoords2.size())
 					{
-						verticesLinkIndex[i] = buffer->Vertices_2TCoords.size();
-						buffer->Vertices_2TCoords.push_back( mesh->Vertices[i] );
+						buffer->getVertexBuffer()->addVertex( &mesh->Vertices[i] );
 						// We have a problem with correct tcoord2 handling here
 						// crash fixed for now by checking the values
-						buffer->Vertices_2TCoords.getLast().TCoords2=(i<mesh->TCoords2.size())?mesh->TCoords2[i]:mesh->Vertices[i].TCoords;
+						video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
+						Vertices[buffer->getVertexBuffer()->getVertexCount()-1].TCoords2=(i<mesh->TCoords2.size())?mesh->TCoords2[i]:mesh->Vertices[i].TCoords;
 					}
 					else
-					{
-						verticesLinkIndex[i] = buffer->Vertices_Standard.size();
-						buffer->Vertices_Standard.push_back( mesh->Vertices[i] );
-					}
+						buffer->getVertexBuffer()->addVertex( &mesh->Vertices[i] );
 				}
 
 				// count indices per buffer and reallocate
@@ -360,15 +360,15 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 				for (i=0; i<mesh->FaceMaterialIndices.size(); ++i)
 					++vCountArray[ mesh->FaceMaterialIndices[i] ];
 				for (i=0; i!=mesh->Buffers.size(); ++i)
-					mesh->Buffers[i]->Indices.reallocate(vCountArray[i]);
+					mesh->Buffers[i]->getIndexBuffer()->reallocate(vCountArray[i]);
 				delete [] vCountArray;
 				// create indices per buffer
 				for (i=0; i<mesh->FaceMaterialIndices.size(); ++i)
 				{
-					scene::SSkinMeshBuffer *buffer = mesh->Buffers[ mesh->FaceMaterialIndices[i] ];
+					IMeshBuffer *buffer = mesh->Buffers[ mesh->FaceMaterialIndices[i] ];
 					for (u32 id=i*3+0; id!=i*3+3; ++id)
 					{
-						buffer->Indices.push_back( verticesLinkIndex[ mesh->Indices[id] ] );
+						buffer->getIndexBuffer()->addIndex( verticesLinkIndex[ mesh->Indices[id] ] );
 					}
 				}
 			}
