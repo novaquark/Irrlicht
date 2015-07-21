@@ -323,6 +323,7 @@ bool COpenGLHardwareBuffer::update(const scene::E_HARDWARE_MAPPING mapping, cons
 
 	Driver->extGlBindBuffer(target, 0);
 
+	RequiredUpdate = false;
 	return true;
 #else
 	return false;
