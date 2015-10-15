@@ -128,8 +128,8 @@ COpenGLSLMaterialRenderer::~COpenGLSLMaterialRenderer()
 	}
 	else if (Program)
 	{
-		if (Driver->getActiveGLSLProgram() == Program)
-			Driver->setActiveGLSLProgram(0);
+//		if (Driver->getActiveGLSLProgram() == Program)
+//			Driver->setActiveGLSLProgram(0);
 	}
 
 	if (CallBack)
@@ -294,8 +294,8 @@ void COpenGLSLMaterialRenderer::OnSetMaterial(const video::SMaterial& material,
 
 	if (Program2)
 		Driver->setActiveGLSLProgram(Program2);
-	else if (Program)
-		Driver->setActiveGLSLProgram(Program);
+//	else if (Program)
+//		Driver->setActiveGLSLProgram(Program);
 	else
 		Driver->setActiveGLSLProgram(0);
 }
