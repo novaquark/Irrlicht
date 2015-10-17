@@ -503,7 +503,7 @@ CIrrDeviceMacOSX::CIrrDeviceMacOSX(const SIrrlichtCreationParameters& param)
 		}
 
 		path = [[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
-		chdir([path fileSystemRepresentation]);
+//		chdir([path fileSystemRepresentation]);
 		[path release];
 	}
     NSWindow* a;
