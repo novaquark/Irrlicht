@@ -627,7 +627,7 @@ bool CIrrDeviceMacOSX::createWindow()
 
 				int x = std::max(0, CreationParams.WindowPosition.X);
 				int y = std::max(0, CreationParams.WindowPosition.Y);
-				
+
 				if (CreationParams.WindowPosition.Y > -1)
 				{
 					int screenHeight = [[[NSScreen screens] objectAtIndex:0] frame].size.height;
@@ -652,6 +652,7 @@ bool CIrrDeviceMacOSX::createWindow()
 						NSOpenGLPFASamples, (NSOpenGLPixelFormatAttribute)CreationParams.AntiAlias,
 						NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)(CreationParams.Stencilbuffer?1:0),
 						NSOpenGLPFADoubleBuffer,
+						NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
 						(NSOpenGLPixelFormatAttribute)nil
 					};
 
@@ -1510,7 +1511,7 @@ void CIrrDeviceMacOSX::restoreWindow()
 {
 	[Window deminiaturize:[NSApp self]];
 }
-    
+
 //! Get the position of this window on screen
 core::position2di CIrrDeviceMacOSX::getWindowPosition()
 {
@@ -1907,4 +1908,3 @@ video::IVideoModeList* CIrrDeviceMacOSX::getVideoModeList()
 } // end namespace
 
 #endif // _IRR_COMPILE_WITH_OSX_DEVICE_
-
