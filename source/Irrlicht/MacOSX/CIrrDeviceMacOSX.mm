@@ -653,7 +653,7 @@ bool CIrrDeviceMacOSX::createWindow()
 						NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)(CreationParams.Stencilbuffer?1:0),
 						NSOpenGLPFADoubleBuffer,
 						NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
-						(NSOpenGLPixelFormatAttribute)nil
+						(NSOpenGLPixelFormatAttribute)0
 					};
 
 					if (CreationParams.AntiAlias<2)
@@ -679,7 +679,7 @@ bool CIrrDeviceMacOSX::createWindow()
 						{
 							// Third try without Doublebuffer
 							os::Printer::log("No doublebuffering available.", ELL_WARNING);
-							windowattribs[14]=(NSOpenGLPixelFormatAttribute)nil;
+							windowattribs[14]=(NSOpenGLPixelFormatAttribute)0;
 						}
 
 						format = [[NSOpenGLPixelFormat alloc] initWithAttributes:windowattribs];
@@ -1340,7 +1340,7 @@ void CIrrDeviceMacOSX::setMouseLocation(int x,int y)
 	c.y = p.y;
 
 #ifdef __MAC_10_6
-    CGEventRef ev = CGEventCreateMouseEvent(0, kCGEventMouseMoved, c, 0);
+    CGEventRef ev = CGEventCreateMouseEvent(0, kCGEventMouseMoved, c, (CGMouseButton)0);
     CGEventPost(kCGHIDEventTap, ev);
     CFRelease(ev);
 #else

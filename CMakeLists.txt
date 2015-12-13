@@ -64,6 +64,12 @@ glob_c_cpp_sources(IRR_SRC_FILES_LIBPNG ${IRR_SRC_DIR}/libpng)
 glob_c_cpp_sources(IRR_SRC_FILES_LZMA ${IRR_SRC_DIR}/lzma)
 glob_c_cpp_sources(IRR_SRC_FILES_ZLIB ${IRR_SRC_DIR}/zlib)
 
+file(GLOB IRR_MAC_FILES
+  "${IRR_SRC_DIR}/MacOSX/*.mm"
+  "${IRR_SRC_DIR}/MacOSX/*.h"
+  )
+
+
 # Remove test/dll main code from (some) thirdparty libs
 # -------------------------------------------------------------------------------------------------
 list(REMOVE_ITEM IRR_SRC_FILES_BZIP2
@@ -97,6 +103,8 @@ source_group(Irrlicht\\libs\\jpeglib    FILES ${IRR_SRC_FILES_JPEGLIB})
 source_group(Irrlicht\\libs\\libpng     FILES ${IRR_SRC_FILES_LIBPNG})
 source_group(Irrlicht\\libs\\lzma       FILES ${IRR_SRC_FILES_LZMA})
 source_group(Irrlicht\\libs\\zlib       FILES ${IRR_SRC_FILES_ZLIB})
+source_group(Irrlicht\\Mac       FILES ${IRR_MAC_FILES})
+
 
 # Irrlicht target
 # -------------------------------------------------------------------------------------------------
@@ -108,6 +116,11 @@ set(IRR_ALL_SRC_FILES
 	${IRR_SRC_FILES_LIBPNG}
 	${IRR_SRC_FILES_LZMA}
 	${IRR_SRC_FILES_ZLIB})
+
+if(APPLE)
+  list(APPEND IRR_ALL_SRC_FILES ${IRR_MAC_FILES})
+endif()
+
 if(${IRRLICHT_SHARED})
 	add_library(Irrlicht SHARED ${IRR_ALL_SRC_FILES})
 else()
@@ -135,6 +148,8 @@ endif()
 # Export symbols
 target_compile_definitions(Irrlicht PRIVATE IRRLICHT_EXPORTS)
 
+set_target_properties(Irrlicht PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
+
 # Other flags
 set(IRR_PLATFORM "Linux")
 if(WIN32)
@@ -160,6 +175,20 @@ if(WIN32)
 	
 	# TEMP: no DirectX 9
 	target_compile_definitions(Irrlicht PRIVATE NO_IRR_COMPILE_WITH_DIRECT3D_9_)
+elseif(APPLE)
+  target_compile_options(Irrlicht
+    PRIVATE "-Wall"
+    PRIVATE "-pipe"
+    PRIVATE "-fno-exceptions"
+    PRIVATE "-fno-strict-aliasing"
+    PRIVATE "-Wno-c++11-narrowing"
+    )
+
+    target_link_libraries(Irrlicht
+      PRIVATE "-framework OpenGL"
+      PRIVATE "-framework  AppKit"
+      PRIVATE "-framework  IOKit")
+
 elseif(UNIX)
 	# Standard mode
 	target_compile_options(Irrlicht
