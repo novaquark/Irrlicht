@@ -503,7 +503,7 @@ CIrrDeviceMacOSX::CIrrDeviceMacOSX(const SIrrlichtCreationParameters& param)
 		}
 
 		path = [[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
-		chdir([path fileSystemRepresentation]);
+//		chdir([path fileSystemRepresentation]);
 		[path release];
 	}
     NSWindow* a;
@@ -627,7 +627,7 @@ bool CIrrDeviceMacOSX::createWindow()
 
 				int x = std::max(0, CreationParams.WindowPosition.X);
 				int y = std::max(0, CreationParams.WindowPosition.Y);
-				
+
 				if (CreationParams.WindowPosition.Y > -1)
 				{
 					int screenHeight = [[[NSScreen screens] objectAtIndex:0] frame].size.height;
@@ -652,7 +652,8 @@ bool CIrrDeviceMacOSX::createWindow()
 						NSOpenGLPFASamples, (NSOpenGLPixelFormatAttribute)CreationParams.AntiAlias,
 						NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)(CreationParams.Stencilbuffer?1:0),
 						NSOpenGLPFADoubleBuffer,
-						(NSOpenGLPixelFormatAttribute)nil
+						NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
+						(NSOpenGLPixelFormatAttribute)0
 					};
 
 					if (CreationParams.AntiAlias<2)
@@ -678,7 +679,7 @@ bool CIrrDeviceMacOSX::createWindow()
 						{
 							// Third try without Doublebuffer
 							os::Printer::log("No doublebuffering available.", ELL_WARNING);
-							windowattribs[14]=(NSOpenGLPixelFormatAttribute)nil;
+							windowattribs[14]=(NSOpenGLPixelFormatAttribute)0;
 						}
 
 						format = [[NSOpenGLPixelFormat alloc] initWithAttributes:windowattribs];
@@ -1252,6 +1253,8 @@ void CIrrDeviceMacOSX::postMouseEvent(void *event,irr::SEvent &ievent)
 
 	if (Window != NULL)
 	{
+        ievent.MouseInput.Shift = ([(NSEvent *)event modifierFlags] & NSShiftKeyMask) != 0;
+        ievent.MouseInput.Control = ([(NSEvent *)event modifierFlags] & NSControlKeyMask) != 0;
 		ievent.MouseInput.X = (int)[(NSEvent *)event locationInWindow].x;
 		ievent.MouseInput.Y = DeviceHeight - (int)[(NSEvent *)event locationInWindow].y;
 
@@ -1339,7 +1342,7 @@ void CIrrDeviceMacOSX::setMouseLocation(int x,int y)
 	c.y = p.y;
 
 #ifdef __MAC_10_6
-    CGEventRef ev = CGEventCreateMouseEvent(0, kCGEventMouseMoved, c, 0);
+    CGEventRef ev = CGEventCreateMouseEvent(0, kCGEventMouseMoved, c, (CGMouseButton)0);
     CGEventPost(kCGHIDEventTap, ev);
     CFRelease(ev);
 #else
@@ -1510,7 +1513,7 @@ void CIrrDeviceMacOSX::restoreWindow()
 {
 	[Window deminiaturize:[NSApp self]];
 }
-    
+
 //! Get the position of this window on screen
 core::position2di CIrrDeviceMacOSX::getWindowPosition()
 {
@@ -1907,4 +1910,3 @@ video::IVideoModeList* CIrrDeviceMacOSX::getVideoModeList()
 } // end namespace
 
 #endif // _IRR_COMPILE_WITH_OSX_DEVICE_
-

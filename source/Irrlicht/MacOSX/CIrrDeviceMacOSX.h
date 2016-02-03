@@ -10,9 +10,11 @@
 
 #ifdef _IRR_COMPILE_WITH_OSX_DEVICE_
 
+#if __OBJC__
 #import <AppKit/NSWindow.h>
 #import <AppKit/NSOpenGL.h>
 #import <AppKit/NSBitmapImageRep.h>
+#endif
 
 #include "CIrrDeviceStub.h"
 #include "IrrlichtDevice.h"
@@ -227,6 +229,13 @@ namespace irr
 		void postMouseEvent(void *event, irr::SEvent &ievent);
 		void postKeyEvent(void *event, irr::SEvent &ievent, bool pressed);
 		void pollJoysticks();
+
+#if !__OBJC__
+    typedef void* NSWindow;
+    typedef void* NSBitmapImageRep;
+    typedef void* NSOpenGLContext;
+    
+#endif   
 
 		NSWindow *Window;
 		CGLContextObj CGLContext;

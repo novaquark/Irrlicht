@@ -261,7 +261,7 @@ namespace scene
 		SMesh* createMeshCopy(IMesh* mesh, video::IVertexDescriptor* descriptor, bool copyCustomAttribute = false)
 		{
 			if (!mesh || mesh->getMeshBufferCount() == 0 || !descriptor || descriptor->getVertexSize(0) != sizeof(T))
-				return false;
+				return nullptr;
 
 			const u32 mbCount = mesh->getMeshBufferCount();
 
@@ -270,7 +270,7 @@ namespace scene
 				const IMeshBuffer* const mb = mesh->getMeshBuffer(i);
 
 				if (!mb->isVertexBufferCompatible() || mb->getVertexBufferCount() > 1)
-					return false;
+					return nullptr;
 			}
 
 			SMesh* dstMesh = new SMesh();

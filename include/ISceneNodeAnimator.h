@@ -55,7 +55,7 @@ namespace scene
 		}
 
 		//! Event receiver, override this function for camera controlling animators
-		virtual bool OnEvent(const SEvent& event)
+		virtual bool OnEvent(const SEvent& event) override
 		{
 			return false;
 		}
