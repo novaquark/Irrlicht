@@ -185,7 +185,8 @@ elseif(APPLE)
     target_link_libraries(Irrlicht
       PRIVATE "-framework OpenGL"
       PRIVATE "-framework  AppKit"
-      PRIVATE "-framework  IOKit")
+      PRIVATE "-framework  IOKit"
+      PRIVATE "-framework Carbon")
 
 elseif(UNIX)
 	# Standard mode
